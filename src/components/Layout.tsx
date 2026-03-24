@@ -3,7 +3,7 @@ import { Tent, ClipboardList, Mic, Wallet, Users, Bell, ShieldAlert, Music } fro
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import useAppStore from '@/stores/useAppStore'
 
 const NAV_ITEMS = [
@@ -16,7 +16,7 @@ const NAV_ITEMS = [
 
 export default function Layout() {
   const location = useLocation()
-  const { user } = useAppStore()
+  const { user, toggleGovernance } = useAppStore()
 
   return (
     <div className="flex h-screen bg-transparent overflow-hidden text-foreground">
@@ -71,15 +71,29 @@ export default function Layout() {
             </h2>
           </div>
           <div className="flex items-center space-x-4">
-            {user.isGovernance && (
-              <Badge
-                variant="secondary"
-                className="hidden sm:flex bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200 shadow-sm"
-              >
-                <ShieldAlert className="w-3 h-3 mr-1" />
-                Governança
-              </Badge>
-            )}
+            <div className="hidden sm:flex items-center space-x-3 bg-white/80 px-4 py-1.5 rounded-2xl border border-amber-200/50 shadow-sm transition-colors hover:bg-orange-50/50">
+              <div className="flex items-center space-x-1.5">
+                <ShieldAlert
+                  className={cn(
+                    'w-4 h-4 transition-colors',
+                    user.isGovernance ? 'text-primary' : 'text-foreground/30',
+                  )}
+                />
+                <span
+                  className={cn(
+                    'text-[10px] font-black uppercase tracking-widest transition-colors',
+                    user.isGovernance ? 'text-primary' : 'text-foreground/40',
+                  )}
+                >
+                  Modo Admin
+                </span>
+              </div>
+              <Switch
+                checked={user.isGovernance}
+                onCheckedChange={toggleGovernance}
+                className="scale-[0.8] data-[state=checked]:bg-primary shadow-inner"
+              />
+            </div>
             <Button
               variant="ghost"
               size="icon"

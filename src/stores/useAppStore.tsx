@@ -54,11 +54,22 @@ export type ParticipantFinance = {
   amount: number
 }
 
+export type Announcement = {
+  id: string
+  title: string
+  date: string
+  content: string
+  pinned: boolean
+  archived: boolean
+}
+
 type AppState = {
   user: UserProfile
   setUser: (user: UserProfile) => void
+  toggleGovernance: () => void
   groups: Group[]
   joinGroup: (groupId: string) => void
+  addGroup: (group: Omit<Group, 'id' | 'memberIds'>) => void
   tasks: Task[]
   moveTask: (id: string, newStatus: TaskStatus) => void
   addTask: (groupId: string, title: string, priority: string) => void
@@ -68,6 +79,9 @@ type AppState = {
   participantsFinance: ParticipantFinance[]
   updateParticipantFinance: (id: string, field: 'p1' | 'p2' | 'p3', status: FinanceStatus) => void
   totalGuests: number
+  announcements: Announcement[]
+  addAnnouncement: (ann: Omit<Announcement, 'id' | 'date' | 'archived'>) => void
+  archiveAnnouncement: (id: string) => void
 }
 
 const defaultUser: UserProfile = {
@@ -80,8 +94,29 @@ const defaultUser: UserProfile = {
   nannies: 0,
   vegetarian: false,
   restrictions: '',
-  isGovernance: true, // Started as true to easily test acceptance criteria
+  isGovernance: true,
 }
+
+const mockAnnouncements: Announcement[] = [
+  {
+    id: 'a1',
+    title: 'Vai ter roda de samba sim!',
+    date: new Date().toISOString(),
+    content:
+      'Pessoal, não esqueçam de trazer seus instrumentos. A roda de samba oficial acontece no sábado à tarde!',
+    pinned: true,
+    archived: false,
+  },
+  {
+    id: 'a2',
+    title: 'Lembrete da Vakinha (Parcela 2)',
+    date: new Date(Date.now() - 86400000).toISOString(),
+    content:
+      'Lembrando que o vencimento da segunda parcela é dia 15. Ajudem a governança, paguem em dia! Verifiquem a aba de finanças.',
+    pinned: false,
+    archived: false,
+  },
+]
 
 const mockGroups: Group[] = [
   {
@@ -97,13 +132,6 @@ const mockGroups: Group[] = [
     description: 'Ajudar a manter a casa habitável e recolher as latas.',
     type: 'general',
     memberIds: [],
-  },
-  {
-    id: 'g3',
-    name: 'Ministério do Som',
-    description: 'Cuidar das caixas JBL, cabos, violão e setlists.',
-    type: 'general',
-    memberIds: ['u1'],
   },
 ]
 
@@ -124,14 +152,6 @@ const mockTasks: Task[] = [
     assignee: 'Maria',
     priority: 'Média',
   },
-  {
-    id: 't3',
-    groupId: 'g3',
-    title: 'Fazer playlist pro churrasco de sábado',
-    status: 'todo',
-    assignee: 'Ana',
-    priority: 'Baixa',
-  },
 ]
 
 const mockPolls: Poll[] = [
@@ -144,19 +164,6 @@ const mockPolls: Poll[] = [
     options: [
       { id: 'o1', text: 'Rodízio de Pizza', votes: 4 },
       { id: 'o2', text: 'Noite do Hamburguer', votes: 7 },
-      { id: 'o3', text: 'Sobras do Churrasco (Economia)', votes: 12 },
-    ],
-  },
-  {
-    id: 'p2',
-    title: 'Gincana da Tarde de Sexta',
-    description: 'Pra animar as crianças e os adultos.',
-    deadline: new Date(Date.now() - 86400000).toISOString().slice(0, 16),
-    status: 'closed',
-    votedOptionId: 'o5',
-    options: [
-      { id: 'o4', text: 'Torneio de Truco', votes: 15 },
-      { id: 'o5', text: 'Futebol de Sabão', votes: 5 },
     ],
   },
 ]
@@ -164,8 +171,6 @@ const mockPolls: Poll[] = [
 const mockParticipantsFinance: ParticipantFinance[] = [
   { id: 'pf1', name: 'João (Você)', p1: 'paid', p2: 'paid', p3: 'pending', amount: 850 },
   { id: 'pf2', name: 'Maria F.', p1: 'paid', p2: 'pending', p3: 'pending', amount: 450 },
-  { id: 'pf3', name: 'Carlos S.', p1: 'paid', p2: 'paid', p3: 'late', amount: 1200 },
-  { id: 'pf4', name: 'Ana P.', p1: 'paid', p2: 'late', p3: 'pending', amount: 450 },
 ]
 
 const AppContext = createContext<AppState | undefined>(undefined)
@@ -177,6 +182,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [polls, setPolls] = useState<Poll[]>(mockPolls)
   const [participantsFinance, setParticipantsFinance] =
     useState<ParticipantFinance[]>(mockParticipantsFinance)
+  const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements)
+
+  const toggleGovernance = () => setUser((prev) => ({ ...prev, isGovernance: !prev.isGovernance }))
 
   const joinGroup = (groupId: string) => {
     setGroups((prev) =>
@@ -184,29 +192,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     )
   }
 
+  const addGroup = (group: Omit<Group, 'id' | 'memberIds'>) => {
+    setGroups((prev) => [
+      ...prev,
+      { ...group, id: Math.random().toString(36).substr(2, 9), memberIds: [user.id] },
+    ])
+  }
+
   const moveTask = (id: string, newStatus: TaskStatus) => {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: newStatus } : t)))
   }
 
   const addTask = (groupId: string, title: string, priority: string) => {
-    const newTask: Task = {
-      id: Math.random().toString(36).substr(2, 9),
-      groupId,
-      title,
-      status: 'todo',
-      assignee: user.name,
-      priority,
-    }
-    setTasks((prev) => [...prev, newTask])
+    setTasks((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(36).substr(2, 9),
+        groupId,
+        title,
+        status: 'todo',
+        assignee: user.name,
+        priority,
+      },
+    ])
   }
 
   const addPoll = (pollData: Omit<Poll, 'id' | 'votedOptionId' | 'status'>) => {
-    const newPoll: Poll = {
-      ...pollData,
-      id: Math.random().toString(36).substr(2, 9),
-      status: 'open',
-    }
-    setPolls((prev) => [newPoll, ...prev])
+    setPolls((prev) => [
+      { ...pollData, id: Math.random().toString(36).substr(2, 9), status: 'open' },
+      ...prev,
+    ])
   }
 
   const votePoll = (pollId: string, optionId: string) => {
@@ -232,7 +247,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setParticipantsFinance((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: status } : p)))
   }
 
-  // 12 mock adults + user's family
+  const addAnnouncement = (ann: Omit<Announcement, 'id' | 'date' | 'archived'>) => {
+    setAnnouncements((prev) => [
+      {
+        ...ann,
+        id: Math.random().toString(36).substr(2, 9),
+        date: new Date().toISOString(),
+        archived: false,
+      },
+      ...prev,
+    ])
+  }
+
+  const archiveAnnouncement = (id: string) => {
+    setAnnouncements((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, archived: true, pinned: false } : a)),
+    )
+  }
+
   const totalGuests = useMemo(() => 12 + user.adults + user.children + user.nannies, [user])
 
   return (
@@ -240,8 +272,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         user,
         setUser,
+        toggleGovernance,
         groups,
         joinGroup,
+        addGroup,
         tasks,
         moveTask,
         addTask,
@@ -251,6 +285,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         participantsFinance,
         updateParticipantFinance,
         totalGuests,
+        announcements,
+        addAnnouncement,
+        archiveAnnouncement,
       }}
     >
       {children}

@@ -1,42 +1,84 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MapPin, Calendar, Users, Flame, Pin, ArrowRight, Guitar, PartyPopper } from 'lucide-react'
+import {
+  MapPin,
+  Calendar,
+  Users,
+  Flame,
+  Pin,
+  ArrowRight,
+  Guitar,
+  PartyPopper,
+  Archive,
+  MessageSquarePlus,
+} from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog'
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
+import { useToast } from '@/hooks/use-toast'
 import useAppStore from '@/stores/useAppStore'
 import { cn } from '@/lib/utils'
 
-const ANNOUNCEMENTS = [
-  {
-    id: 1,
-    title: 'Vai ter roda de samba sim!',
-    date: 'Hoje, 10:00',
-    content:
-      'Pessoal, não esqueçam de trazer seus instrumentos. A roda de samba oficial acontece no sábado à tarde!',
-    pinned: true,
-  },
-  {
-    id: 2,
-    title: 'Lembrete da Vakinha (Parcela 2)',
-    date: 'Ontem, 18:30',
-    content:
-      'Lembrando que o vencimento da segunda parcela é dia 15. Ajudem a governança, paguem em dia! Verifiquem a aba de finanças.',
-    pinned: false,
-  },
-]
-
 export default function Index() {
-  const { totalGuests } = useAppStore()
+  const { totalGuests, user, announcements, addAnnouncement, archiveAnnouncement } = useAppStore()
+  const { toast } = useToast()
 
-  // Calculate days remaining roughly
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [pinned, setPinned] = useState(false)
+  const [openAdd, setOpenAdd] = useState(false)
+
+  const activeAnnouncements = announcements
+    .filter((a) => !a.archived)
+    .sort(
+      (a, b) =>
+        (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) ||
+        new Date(b.date).getTime() - new Date(a.date).getTime(),
+    )
+
+  const archivedAnnouncements = announcements
+    .filter((a) => a.archived)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+  const handleCreateAnn = () => {
+    if (!title || !content) return
+    addAnnouncement({ title, content, pinned })
+    setTitle('')
+    setContent('')
+    setPinned(false)
+    setOpenAdd(false)
+    toast({ title: 'Recado publicado no mural! 📢' })
+  }
+
   const targetDate = new Date('2024-12-20T00:00:00')
   const today = new Date()
-  const diffTime = Math.max(targetDate.getTime() - today.getTime(), 0)
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  const diffDays = Math.ceil(
+    Math.max(targetDate.getTime() - today.getTime(), 0) / (1000 * 60 * 60 * 24),
+  )
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Hero Section */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-orange-500 to-rose-500 text-white p-8 md:p-12 shadow-xl shadow-primary/20">
         <div className="absolute top-0 right-0 opacity-20 pointer-events-none -translate-y-10 translate-x-10">
           <Guitar className="w-64 h-64 rotate-12" />
@@ -76,7 +118,6 @@ export default function Index() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Column: Summary & Actions */}
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <Card className="bg-white/80 backdrop-blur-sm border-amber-100 shadow-sm hover:shadow-md transition-shadow">
@@ -122,8 +163,7 @@ export default function Index() {
                 variant="outline"
               >
                 <Link to="/voting">
-                  Votar no Setlist/Comida
-                  <ArrowRight className="w-4 h-4 ml-2 text-primary" />
+                  Votar no Setlist/Comida <ArrowRight className="w-4 h-4 ml-2 text-primary" />
                 </Link>
               </Button>
               <Button
@@ -132,52 +172,210 @@ export default function Index() {
                 variant="outline"
               >
                 <Link to="/tasks">
-                  Tarefas do Bonde
-                  <ArrowRight className="w-4 h-4 ml-2 text-secondary" />
+                  Tarefas do Bonde <ArrowRight className="w-4 h-4 ml-2 text-secondary" />
                 </Link>
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column: Feed */}
         <div className="md:col-span-2 space-y-4">
-          <h3 className="text-xl font-black font-display text-foreground flex items-center mb-2">
-            Mural de Recados
-          </h3>
-          <div className="space-y-4">
-            {ANNOUNCEMENTS.map((ann) => (
-              <Card
-                key={ann.id}
-                className={cn(
-                  'shadow-sm transition-all hover:shadow-md border',
-                  ann.pinned
-                    ? 'border-primary/40 bg-gradient-to-r from-orange-50 to-white'
-                    : 'border-amber-100 bg-white/80 backdrop-blur-sm',
-                )}
-              >
-                <CardContent className="p-5">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center space-x-2">
-                      {ann.pinned && (
-                        <div className="p-1.5 bg-primary/10 rounded-full">
-                          <Pin className="w-4 h-4 text-primary fill-primary/20" />
-                        </div>
-                      )}
-                      <h4 className="font-bold text-foreground font-display text-lg">
-                        {ann.title}
-                      </h4>
-                    </div>
-                    <span className="text-xs font-bold text-foreground/40 uppercase tracking-wide bg-foreground/5 px-2 py-1 rounded-md">
-                      {ann.date}
-                    </span>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-black font-display text-foreground flex items-center">
+              Mural de Recados
+            </h3>
+            <div className="flex items-center space-x-2">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="font-bold border-amber-200 hover:bg-amber-50 rounded-xl h-9"
+                  >
+                    <Archive className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Histórico</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="overflow-y-auto w-full sm:max-w-md border-l-amber-200">
+                  <SheetHeader className="mb-6 border-b border-amber-100 pb-4">
+                    <SheetTitle className="font-display font-black text-2xl">Arquivo</SheetTitle>
+                    <SheetDescription className="font-medium text-base">
+                      Mensagens que não estão mais no mural principal.
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="space-y-4">
+                    {archivedAnnouncements.length === 0 && (
+                      <p className="text-sm font-bold text-foreground/40 text-center py-8">
+                        Vazio por aqui.
+                      </p>
+                    )}
+                    {archivedAnnouncements.map((ann) => (
+                      <Card
+                        key={ann.id}
+                        className="bg-orange-50/30 border-amber-100 shadow-sm opacity-90"
+                      >
+                        <CardContent className="p-4">
+                          <h4 className="font-bold text-foreground line-clamp-1 text-base">
+                            {ann.title}
+                          </h4>
+                          <p className="text-xs font-bold text-foreground/40 uppercase tracking-widest my-1">
+                            {new Date(ann.date).toLocaleString('pt-BR')}
+                          </p>
+                          <p className="text-sm text-foreground/70 line-clamp-3 mt-2">
+                            {ann.content}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
-                  <p className="text-sm text-foreground/70 leading-relaxed font-medium">
-                    {ann.content}
-                  </p>
-                </CardContent>
-              </Card>
+                </SheetContent>
+              </Sheet>
+
+              {user.isGovernance && (
+                <Dialog open={openAdd} onOpenChange={setOpenAdd}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="font-bold shadow-md rounded-xl h-9">
+                      <MessageSquarePlus className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Novo Recado</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px] border-amber-200">
+                    <DialogHeader>
+                      <DialogTitle className="font-display font-black text-2xl">
+                        Avisar a Galera
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label className="font-bold">Título</Label>
+                        <Input
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder="Ex: Roda de Samba..."
+                          className="bg-orange-50/30 border-amber-200 font-bold"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-bold">Mensagem</Label>
+                        <Textarea
+                          value={content}
+                          onChange={(e) => setContent(e.target.value)}
+                          placeholder="Detalhes do aviso..."
+                          className="h-32 bg-orange-50/30 border-amber-200 resize-none"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-3 bg-orange-50/50 p-3 rounded-xl border border-amber-100">
+                        <Switch
+                          checked={pinned}
+                          onCheckedChange={setPinned}
+                          className="scale-90 data-[state=checked]:bg-primary"
+                        />
+                        <div className="space-y-0.5">
+                          <Label
+                            className="font-bold cursor-pointer"
+                            onClick={() => setPinned(!pinned)}
+                          >
+                            Fixar no topo?
+                          </Label>
+                          <p className="text-xs text-foreground/60 font-medium">
+                            Deixa essa mensagem com destaque.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        onClick={handleCreateAnn}
+                        className="font-bold rounded-xl shadow-md w-full"
+                      >
+                        Publicar Recado
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {activeAnnouncements.map((ann) => (
+              <Dialog key={ann.id}>
+                <DialogTrigger asChild>
+                  <Card
+                    className={cn(
+                      'shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer border',
+                      ann.pinned
+                        ? 'border-primary/40 bg-gradient-to-r from-orange-50 to-white'
+                        : 'border-amber-100 bg-white/80 backdrop-blur-sm',
+                    )}
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center space-x-2">
+                          {ann.pinned && (
+                            <div className="p-1.5 bg-primary/10 rounded-full shrink-0">
+                              <Pin className="w-4 h-4 text-primary fill-primary/20" />
+                            </div>
+                          )}
+                          <h4 className="font-bold text-foreground font-display text-lg line-clamp-1">
+                            {ann.title}
+                          </h4>
+                        </div>
+                        <span className="text-xs font-bold text-foreground/40 uppercase tracking-wide bg-foreground/5 px-2 py-1 rounded-md shrink-0 ml-2">
+                          {new Date(ann.date).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+                      <p className="text-sm text-foreground/70 leading-relaxed font-medium line-clamp-2">
+                        {ann.content}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px] border-amber-200">
+                  <DialogHeader>
+                    <div className="flex items-center space-x-2 mb-2">
+                      {ann.pinned && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-primary/10 text-primary hover:bg-primary/20"
+                        >
+                          Fixado
+                        </Badge>
+                      )}
+                      <span className="text-xs font-bold text-foreground/40 uppercase tracking-wider">
+                        {new Date(ann.date).toLocaleString('pt-BR')}
+                      </span>
+                    </div>
+                    <DialogTitle className="text-2xl font-black font-display text-foreground leading-tight">
+                      {ann.title}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <p className="text-base text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                      {ann.content}
+                    </p>
+                  </div>
+                  {user.isGovernance && (
+                    <DialogFooter className="sm:justify-between border-t border-amber-100 pt-4 mt-2">
+                      <DialogClose asChild>
+                        <Button
+                          variant="outline"
+                          className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 font-bold w-full sm:w-auto"
+                          onClick={() => archiveAnnouncement(ann.id)}
+                        >
+                          <Archive className="w-4 h-4 mr-2" /> Arquivar Recado
+                        </Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  )}
+                </DialogContent>
+              </Dialog>
             ))}
+            {activeAnnouncements.length === 0 && (
+              <div className="p-8 text-center bg-white/50 rounded-2xl border-2 border-dashed border-amber-200">
+                <p className="text-foreground/50 font-bold">Nenhum recado no mural.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

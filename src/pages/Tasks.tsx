@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, ChevronRight, ChevronLeft, ArrowLeft, Users, Tent } from 'lucide-react'
+import { Plus, ChevronRight, ChevronLeft, ArrowLeft, Tent } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -22,7 +22,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import useAppStore, { TaskStatus } from '@/stores/useAppStore'
+import { Textarea } from '@/components/ui/textarea'
+import { useToast } from '@/hooks/use-toast'
+import useAppStore, { TaskStatus, GroupType } from '@/stores/useAppStore'
 import { cn } from '@/lib/utils'
 
 const COLUMNS: { id: TaskStatus; title: string; color: string; headerColor: string }[] = [
@@ -53,15 +55,18 @@ const priorityColors: Record<string, string> = {
 }
 
 export default function Tasks() {
-  const { user, groups, joinGroup, tasks, moveTask, addTask } = useAppStore()
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+  const { user, groups, joinGroup, tasks, moveTask, addTask, addGroup } = useAppStore()
+  const { toast } = useToast()
 
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskPriority, setNewTaskPriority] = useState('Média')
 
-  // Rule: Governance groups are restricted to specific members; Open groups are free.
-  // Here, user.isGovernance allows viewing governance groups if they are admins.
-  // We only show groups that are 'general' OR user is in memberIds OR user is governance
+  const [newGroupName, setNewGroupName] = useState('')
+  const [newGroupDesc, setNewGroupDesc] = useState('')
+  const [newGroupType, setNewGroupType] = useState<GroupType>('general')
+  const [openGroupAdd, setOpenGroupAdd] = useState(false)
+
   const availableGroups = groups.filter(
     (g) => g.type === 'general' || g.memberIds.includes(user.id) || user.isGovernance,
   )
@@ -73,15 +78,89 @@ export default function Tasks() {
     setNewTaskTitle('')
   }
 
-  // 1. Group Selection View
+  const handleCreateGroup = () => {
+    if (!newGroupName.trim()) return
+    addGroup({ name: newGroupName, description: newGroupDesc, type: newGroupType })
+    setNewGroupName('')
+    setNewGroupDesc('')
+    setNewGroupType('general')
+    setOpenGroupAdd(false)
+    toast({ title: 'Equipe Criada com Sucesso! 🤝' })
+  }
+
   if (!selectedGroupId) {
     return (
       <div className="space-y-8 animate-fade-in max-w-4xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-black font-display text-foreground">Equipes de Apoio</h1>
-          <p className="text-foreground/60 text-base font-medium mt-1">
-            Nossa festa é feita por todos. Escolha um bonde para ajudar na organização!
-          </p>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-6 gap-4">
+          <div>
+            <h1 className="text-3xl font-black font-display text-foreground">Equipes de Apoio</h1>
+            <p className="text-foreground/60 text-base font-medium mt-1">
+              Nossa festa é feita por todos. Escolha um bonde para ajudar na organização!
+            </p>
+          </div>
+          {user.isGovernance && (
+            <Dialog open={openGroupAdd} onOpenChange={setOpenGroupAdd}>
+              <DialogTrigger asChild>
+                <Button className="font-bold shadow-md rounded-xl h-11 px-6 shrink-0 transition-transform hover:scale-105 active:scale-95">
+                  <Plus className="w-5 h-5 mr-2" /> Nova Equipe
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px] border-amber-200">
+                <DialogHeader>
+                  <DialogTitle className="font-display font-black text-2xl">
+                    Montar Bonde
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-5 py-4">
+                  <div className="space-y-2">
+                    <Label className="font-bold">Nome da Equipe</Label>
+                    <Input
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      placeholder="Ex: Mestres Cervejeiros"
+                      className="bg-orange-50/30 border-amber-200 font-bold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-bold">O que essa equipe faz?</Label>
+                    <Textarea
+                      value={newGroupDesc}
+                      onChange={(e) => setNewGroupDesc(e.target.value)}
+                      placeholder="Comprar barril, gelar a cerveja..."
+                      className="h-20 bg-orange-50/30 border-amber-200 resize-none"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-bold">Tipo de Acesso</Label>
+                    <Select
+                      value={newGroupType}
+                      onValueChange={(val: GroupType) => setNewGroupType(val)}
+                    >
+                      <SelectTrigger className="bg-orange-50/30 border-amber-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="general" className="font-medium text-emerald-700">
+                          Aberto (Qualquer um participa)
+                        </SelectItem>
+                        <SelectItem value="governance" className="font-medium text-red-700">
+                          Restrito (Apenas Governança)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    onClick={handleCreateGroup}
+                    className="font-bold rounded-xl shadow-md w-full"
+                  >
+                    Confirmar Equipe
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -111,7 +190,6 @@ export default function Tasks() {
                   <CardDescription className="text-sm font-medium text-foreground/70 leading-relaxed">
                     {group.description}
                   </CardDescription>
-
                   <div className="mt-5 flex items-center space-x-2">
                     <div className="flex -space-x-2">
                       {group.memberIds.slice(0, 4).map((id, i) => (
@@ -153,7 +231,6 @@ export default function Tasks() {
     )
   }
 
-  // 2. Kanban Board View
   return (
     <div className="space-y-6 animate-fade-in h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 bg-white/80 p-4 rounded-2xl border border-amber-200 shadow-sm backdrop-blur-sm">
@@ -203,7 +280,7 @@ export default function Tasks() {
                   id="title"
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder="Ex: Comprar carvão, arrumar som..."
+                  placeholder="Ex: Comprar carvão..."
                   className="bg-orange-50/30 border-amber-200"
                 />
               </div>
@@ -243,7 +320,6 @@ export default function Tasks() {
         </Dialog>
       </div>
 
-      {/* Kanban Board */}
       <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-[500px]">
         {COLUMNS.map((col) => {
           const colTasks = tasks.filter((t) => t.groupId === selectedGroupId && t.status === col.id)
@@ -268,7 +344,6 @@ export default function Tasks() {
                   {colTasks.length}
                 </Badge>
               </div>
-
               <div className="p-3 flex-1 flex flex-col gap-3 overflow-y-auto min-h-[150px]">
                 {colTasks.length === 0 && (
                   <div className="flex-1 flex items-center justify-center text-foreground/40 text-sm font-medium border-2 border-dashed border-current/20 rounded-xl m-2">
@@ -295,7 +370,6 @@ export default function Tasks() {
                           {task.priority}
                         </Badge>
                       </div>
-
                       <div className="flex items-center justify-between mt-2 pt-3 border-t border-amber-50">
                         <div className="flex items-center gap-2">
                           <Avatar className="w-7 h-7 border-2 border-white shadow-sm">
@@ -310,8 +384,6 @@ export default function Tasks() {
                             {task.assignee}
                           </span>
                         </div>
-
-                        {/* Action Buttons to move tasks */}
                         <div className="flex gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                           {col.id !== 'todo' && (
                             <Button
