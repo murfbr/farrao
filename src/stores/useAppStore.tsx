@@ -91,6 +91,32 @@ export type EventDetails = {
   targetDate: string
 }
 
+export type MealType = 'Café da Manhã' | 'Almoço' | 'Jantar' | 'Petiscos' | 'Bebidas'
+
+export type DailyMenu = {
+  id: string
+  day: string
+  meals: {
+    type: MealType
+    description: string
+  }[]
+}
+
+export type ShoppingItemMode = 'simple' | 'complex'
+
+export type ShoppingItem = {
+  id: string
+  name: string
+  category: string
+  mode: ShoppingItemMode
+  manualQuantity: string
+  unitPerAdult: number
+  unitPerChild: number
+  unitName: string
+  notes: string
+  assignedToId: string | null
+}
+
 type AppState = {
   user: UserProfile
   setUser: (user: UserProfile) => void
@@ -122,6 +148,13 @@ type AppState = {
   eventDetails: EventDetails
   updateEventDetails: (details: Partial<EventDetails>) => void
   venuePhotos: string[]
+
+  dailyMenus: DailyMenu[]
+  shoppingItems: ShoppingItem[]
+  addShoppingItem: (item: Omit<ShoppingItem, 'id'>) => void
+  updateShoppingItem: (id: string, updates: Partial<ShoppingItem>) => void
+  deleteShoppingItem: (id: string) => void
+  importShoppingItems: (items: Omit<ShoppingItem, 'id'>[]) => void
 }
 
 const defaultUser: UserProfile = {
@@ -216,6 +249,70 @@ const mockGroups: Group[] = [
   },
 ]
 
+const mockDailyMenus: DailyMenu[] = [
+  {
+    id: 'm1',
+    day: 'Sexta-feira (20/12)',
+    meals: [
+      { type: 'Petiscos', description: 'Tábua de frios, amendoim, azeitonas e pão de alho' },
+      { type: 'Jantar', description: 'Lasanha à bolonhesa e salada mix' },
+    ],
+  },
+  {
+    id: 'm2',
+    day: 'Sábado (21/12)',
+    meals: [
+      { type: 'Café da Manhã', description: 'Pães, frios, frutas, ovos mexidos, café e suco' },
+      {
+        type: 'Almoço',
+        description:
+          'Churrasco completo (Picanha, Linguiça, Frango, Pão de alho, Farofa, Maionese, Vinagrete)',
+      },
+      { type: 'Petiscos', description: 'Churrasco rolando o dia todo' },
+      {
+        type: 'Jantar',
+        description:
+          'Sopa de capeletti ou caldos variados (depende do clima) + Sobras do churrasco',
+      },
+    ],
+  },
+  {
+    id: 'm3',
+    day: 'Domingo (22/12)',
+    meals: [
+      { type: 'Café da Manhã', description: 'Pães, bolo, queijo, presunto, café e leite' },
+      { type: 'Almoço', description: 'Estrogonofe de frango com batata palha e arroz' },
+    ],
+  },
+]
+
+const mockShoppingItems: ShoppingItem[] = [
+  {
+    id: 's1',
+    name: 'Picanha',
+    category: 'Carnes',
+    mode: 'complex',
+    manualQuantity: '',
+    unitPerAdult: 0.4,
+    unitPerChild: 0.15,
+    unitName: 'kg',
+    notes: 'Comprar a vácuo, de preferência marca Friboi ou Bassi',
+    assignedToId: 'u1',
+  },
+  {
+    id: 's2',
+    name: 'Carvão 10kg',
+    category: 'Churrasco',
+    mode: 'simple',
+    manualQuantity: '4 sacos',
+    unitPerAdult: 0,
+    unitPerChild: 0,
+    unitName: '',
+    notes: 'Pegar qualquer um, desde que seja de boa procedência.',
+    assignedToId: null,
+  },
+]
+
 const mockTasks: Task[] = []
 const mockPolls: Poll[] = []
 
@@ -231,6 +328,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [tasks, setTasks] = useState<Task[]>(mockTasks)
   const [polls, setPolls] = useState<Poll[]>(mockPolls)
   const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements)
+
+  const [dailyMenus] = useState<DailyMenu[]>(mockDailyMenus)
+  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>(mockShoppingItems)
 
   const [eventDetails, setEventDetails] = useState<EventDetails>({
     title: 'Farrão 2024',
@@ -354,6 +454,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setEventDetails((prev) => ({ ...prev, ...details }))
   }
 
+  const addShoppingItem = (item: Omit<ShoppingItem, 'id'>) => {
+    setShoppingItems((prev) => [...prev, { ...item, id: Math.random().toString(36).substr(2, 9) }])
+  }
+
+  const updateShoppingItem = (id: string, updates: Partial<ShoppingItem>) => {
+    setShoppingItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...updates } : i)))
+  }
+
+  const deleteShoppingItem = (id: string) => {
+    setShoppingItems((prev) => prev.filter((i) => i.id !== id))
+  }
+
+  const importShoppingItems = (items: Omit<ShoppingItem, 'id'>[]) => {
+    const newItems = items.map((i) => ({ ...i, id: Math.random().toString(36).substr(2, 9) }))
+    setShoppingItems((prev) => [...newItems, ...prev])
+  }
+
   const totalGuests = useMemo(
     () => participants.reduce((acc, p) => acc + p.members.length, 0),
     [participants],
@@ -388,6 +505,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         eventDetails,
         updateEventDetails,
         venuePhotos,
+        dailyMenus,
+        shoppingItems,
+        addShoppingItem,
+        updateShoppingItem,
+        deleteShoppingItem,
+        importShoppingItems,
       }}
     >
       {children}

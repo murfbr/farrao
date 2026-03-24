@@ -9,6 +9,7 @@ import Tasks from './pages/Tasks'
 import Finance from './pages/Finance'
 import Voting from './pages/Voting'
 import Participants from './pages/Participants'
+import Food from './pages/Food'
 import NotFound from './pages/NotFound'
 import { AppProvider } from './stores/useAppStore'
 
@@ -22,6 +23,7 @@ const App = () => (
           <Route element={<Layout />}>
             <Route path="/" element={<Index />} />
             <Route path="/participants" element={<Participants />} />
+            <Route path="/food" element={<Food />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/voting" element={<Voting />} />
             <Route path="/finance" element={<Finance />} />

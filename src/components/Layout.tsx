@@ -9,6 +9,7 @@ import {
   Bell,
   ShieldAlert,
   Music,
+  Utensils,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -19,6 +20,7 @@ import useAppStore from '@/stores/useAppStore'
 const NAV_ITEMS = [
   { path: '/', label: 'A Tenda', icon: Tent },
   { path: '/participants', label: 'A Lista', icon: Users },
+  { path: '/food', label: 'Comes & Bebes', icon: Utensils },
   { path: '/tasks', label: 'Tarefas', icon: ClipboardList },
   { path: '/voting', label: 'Votações', icon: Mic },
   { path: '/finance', label: 'Finanças', icon: Wallet },
