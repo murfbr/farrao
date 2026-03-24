@@ -11,6 +11,7 @@ import {
   PartyPopper,
   Archive,
   MessageSquarePlus,
+  CheckCircle2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -41,7 +42,15 @@ import useAppStore from '@/stores/useAppStore'
 import { cn } from '@/lib/utils'
 
 export default function Index() {
-  const { totalGuests, user, announcements, addAnnouncement, archiveAnnouncement } = useAppStore()
+  const {
+    totalGuests,
+    user,
+    confirmPresence,
+    participants,
+    announcements,
+    addAnnouncement,
+    archiveAnnouncement,
+  } = useAppStore()
   const { toast } = useToast()
 
   const [title, setTitle] = useState('')
@@ -71,14 +80,53 @@ export default function Index() {
     toast({ title: 'Recado publicado no mural! 📢' })
   }
 
+  const handleConfirmPresence = () => {
+    confirmPresence()
+    toast({
+      title: 'Presença Confirmada! 🎉',
+      description: 'Sua família já está na lista oficial da festa.',
+    })
+  }
+
   const targetDate = new Date('2024-12-20T00:00:00')
   const today = new Date()
   const diffDays = Math.ceil(
     Math.max(targetDate.getTime() - today.getTime(), 0) / (1000 * 60 * 60 * 24),
   )
 
+  const confirmedParticipants = participants.filter((p) => p.hasConfirmed)
+  const confirmedPeople = confirmedParticipants.reduce(
+    (acc, p) => acc + p.adults + p.childrenUnder10 + p.children11to16 + p.nannies,
+    0,
+  )
+
   return (
     <div className="space-y-8 animate-fade-in">
+      {!user.hasConfirmed && (
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-400 to-teal-500 text-white p-6 md:p-8 shadow-xl shadow-emerald-500/20 flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="bg-white/20 p-4 rounded-full shrink-0">
+              <CheckCircle2 className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black font-display drop-shadow-sm">
+                Confirme sua Presença!
+              </h3>
+              <p className="text-white/90 font-medium text-base md:text-lg drop-shadow-sm mt-1">
+                Isso ajuda muito na organização das compras e divisões.
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={handleConfirmPresence}
+            size="lg"
+            className="w-full md:w-auto bg-white text-emerald-600 hover:bg-emerald-50 font-black text-lg h-14 px-8 rounded-xl shadow-md transition-transform hover:scale-105 active:scale-95 shrink-0 z-10"
+          >
+            Estarei Lá! 🎉
+          </Button>
+        </div>
+      )}
+
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-orange-500 to-rose-500 text-white p-8 md:p-12 shadow-xl shadow-primary/20">
         <div className="absolute top-0 right-0 opacity-20 pointer-events-none -translate-y-10 translate-x-10">
           <Guitar className="w-64 h-64 rotate-12" />
@@ -120,21 +168,77 @@ export default function Index() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
-            <Card className="bg-white/80 backdrop-blur-sm border-amber-100 shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-5 flex flex-col items-center justify-center text-center space-y-3">
-                <div className="p-3 bg-secondary/10 rounded-2xl text-secondary">
-                  <Users className="w-7 h-7" />
+            <Sheet>
+              <SheetTrigger asChild>
+                <Card className="bg-white/80 backdrop-blur-sm border-amber-100 shadow-sm hover:shadow-md transition-all hover:scale-105 cursor-pointer">
+                  <CardContent className="p-5 flex flex-col items-center justify-center text-center space-y-3">
+                    <div className="p-3 bg-secondary/10 rounded-2xl text-secondary">
+                      <Users className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <div className="text-3xl font-black font-display text-foreground">
+                        {confirmedPeople}
+                      </div>
+                      <p className="text-xs text-foreground/60 font-bold uppercase tracking-wider mt-1">
+                        Confirmados
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </SheetTrigger>
+              <SheetContent className="overflow-y-auto w-full sm:max-w-md border-l-amber-200">
+                <SheetHeader className="mb-6 border-b border-amber-100 pb-4">
+                  <SheetTitle className="font-display font-black text-2xl flex items-center">
+                    <Users className="w-6 h-6 mr-2 text-primary" />
+                    Quem já confirmou
+                  </SheetTitle>
+                  <SheetDescription className="font-medium text-base">
+                    Lista oficial das pessoas que estarão na festa.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="space-y-4">
+                  {confirmedParticipants.length === 0 && (
+                    <p className="text-sm font-bold text-foreground/40 text-center py-8">
+                      Ninguém confirmou ainda.
+                    </p>
+                  )}
+                  {confirmedParticipants.map((p) => (
+                    <div
+                      key={p.id}
+                      className="p-4 bg-orange-50/50 rounded-xl border border-amber-100 shadow-sm"
+                    >
+                      <h4 className="font-bold text-foreground text-lg">{p.name}</h4>
+                      <p className="text-sm text-foreground/60 font-medium mt-1 mb-2">
+                        {p.householdNames.join(', ')}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge
+                          variant="outline"
+                          className="bg-white border-amber-200 text-[10px] uppercase font-bold"
+                        >
+                          {p.adults} Adultos
+                        </Badge>
+                        {(p.childrenUnder10 > 0 || p.children11to16 > 0) && (
+                          <Badge
+                            variant="outline"
+                            className="bg-white border-amber-200 text-[10px] uppercase font-bold"
+                          >
+                            {p.childrenUnder10 + p.children11to16} Crianças
+                          </Badge>
+                        )}
+                        <Badge
+                          variant="outline"
+                          className="bg-white border-primary/20 text-primary text-[10px] uppercase font-bold"
+                        >
+                          {p.daysAttending} Dias
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <div className="text-3xl font-black font-display text-foreground">
-                    {totalGuests}
-                  </div>
-                  <p className="text-xs text-foreground/60 font-bold uppercase tracking-wider mt-1">
-                    Confirmados
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+              </SheetContent>
+            </Sheet>
+
             <Card className="bg-white/80 backdrop-blur-sm border-amber-100 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="p-5 flex flex-col items-center justify-center text-center space-y-3">
                 <div className="p-3 bg-primary/10 rounded-2xl text-primary">

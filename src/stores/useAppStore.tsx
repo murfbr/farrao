@@ -4,10 +4,14 @@ export type UserProfile = {
   id: string
   name: string
   email: string
+  hasConfirmed: boolean
+  householdNames: string[]
+  daysAttending: number
   adults: number
   children: number
   childrenAges: number[]
   nannies: number
+  drinkingAdults: number
   vegetarian: boolean
   restrictions: string
   isGovernance: boolean
@@ -45,13 +49,30 @@ export type Poll = {
 }
 
 export type FinanceStatus = 'paid' | 'pending' | 'late'
-export type ParticipantFinance = {
+
+export type ParticipantRecord = {
   id: string
   name: string
+  hasConfirmed: boolean
+  householdNames: string[]
+  daysAttending: number
+  adults: number
+  childrenUnder10: number
+  children11to16: number
+  nannies: number
+  drinkingAdults: number
   p1: FinanceStatus
   p2: FinanceStatus
   p3: FinanceStatus
-  amount: number
+  beverageStatus: FinanceStatus
+  socialQuotaOverride: number | null
+}
+
+export type PricingTiers = {
+  adults: number
+  childrenUnder10: number
+  children11to16: number
+  nannies: number
 }
 
 export type Announcement = {
@@ -66,7 +87,17 @@ export type Announcement = {
 type AppState = {
   user: UserProfile
   setUser: (user: UserProfile) => void
+  confirmPresence: () => void
   toggleGovernance: () => void
+
+  pricingTiers: PricingTiers
+  setPricingTiers: (tiers: PricingTiers) => void
+  beverageTotal: number
+  setBeverageTotal: (total: number) => void
+
+  participants: ParticipantRecord[]
+  updateParticipant: (id: string, updates: Partial<ParticipantRecord>) => void
+
   groups: Group[]
   joinGroup: (groupId: string) => void
   addGroup: (group: Omit<Group, 'id' | 'memberIds'>) => void
@@ -76,8 +107,6 @@ type AppState = {
   polls: Poll[]
   votePoll: (pollId: string, optionId: string) => void
   addPoll: (poll: Omit<Poll, 'id' | 'votedOptionId' | 'status'>) => void
-  participantsFinance: ParticipantFinance[]
-  updateParticipantFinance: (id: string, field: 'p1' | 'p2' | 'p3', status: FinanceStatus) => void
   totalGuests: number
   announcements: Announcement[]
   addAnnouncement: (ann: Omit<Announcement, 'id' | 'date' | 'archived'>) => void
@@ -88,13 +117,78 @@ const defaultUser: UserProfile = {
   id: 'u1',
   name: 'João Silva',
   email: 'joao@exemplo.com',
+  hasConfirmed: false,
+  householdNames: ['João Silva', 'Maria Silva', 'Pedrinho'],
+  daysAttending: 4,
   adults: 2,
   children: 1,
   childrenAges: [5],
   nannies: 0,
+  drinkingAdults: 2,
   vegetarian: false,
   restrictions: '',
   isGovernance: true,
+}
+
+const mockParticipants: ParticipantRecord[] = [
+  {
+    id: 'u1',
+    name: 'João Silva (Você)',
+    hasConfirmed: false,
+    householdNames: ['João Silva', 'Maria Silva', 'Pedrinho'],
+    daysAttending: 4,
+    adults: 2,
+    childrenUnder10: 1,
+    children11to16: 0,
+    nannies: 0,
+    drinkingAdults: 2,
+    p1: 'paid',
+    p2: 'paid',
+    p3: 'pending',
+    beverageStatus: 'pending',
+    socialQuotaOverride: null,
+  },
+  {
+    id: 'p2',
+    name: 'Família Souza',
+    hasConfirmed: true,
+    householdNames: ['Carlos Souza', 'Ana Souza', 'Bia Souza'],
+    daysAttending: 3,
+    adults: 2,
+    childrenUnder10: 0,
+    children11to16: 1,
+    nannies: 0,
+    drinkingAdults: 2,
+    p1: 'paid',
+    p2: 'pending',
+    p3: 'pending',
+    beverageStatus: 'paid',
+    socialQuotaOverride: null,
+  },
+  {
+    id: 'p3',
+    name: 'Tio Roberto',
+    hasConfirmed: false,
+    householdNames: ['Roberto'],
+    daysAttending: 2,
+    adults: 1,
+    childrenUnder10: 0,
+    children11to16: 0,
+    nannies: 0,
+    drinkingAdults: 1,
+    p1: 'late',
+    p2: 'pending',
+    p3: 'pending',
+    beverageStatus: 'pending',
+    socialQuotaOverride: 150,
+  },
+]
+
+const defaultPricingTiers: PricingTiers = {
+  adults: 400,
+  childrenUnder10: 0,
+  children11to16: 200,
+  nannies: 300,
 }
 
 const mockAnnouncements: Announcement[] = [
@@ -107,84 +201,70 @@ const mockAnnouncements: Announcement[] = [
     pinned: true,
     archived: false,
   },
-  {
-    id: 'a2',
-    title: 'Lembrete da Vakinha (Parcela 2)',
-    date: new Date(Date.now() - 86400000).toISOString(),
-    content:
-      'Lembrando que o vencimento da segunda parcela é dia 15. Ajudem a governança, paguem em dia! Verifiquem a aba de finanças.',
-    pinned: false,
-    archived: false,
-  },
 ]
 
 const mockGroups: Group[] = [
   {
     id: 'g1',
-    name: 'Comissão do Churras e Bebidas',
+    name: 'Comissão do Churras',
     description: 'Decisões financeiras e compras de alto escalão da governança.',
     type: 'governance',
     memberIds: ['u1'],
   },
-  {
-    id: 'g2',
-    name: 'Bonde da Limpeza',
-    description: 'Ajudar a manter a casa habitável e recolher as latas.',
-    type: 'general',
-    memberIds: [],
-  },
 ]
 
-const mockTasks: Task[] = [
-  {
-    id: 't1',
-    groupId: 'g1',
-    title: 'Pagar sinal da chácara pro dono',
-    status: 'done',
-    assignee: 'João',
-    priority: 'Alta',
-  },
-  {
-    id: 't2',
-    groupId: 'g2',
-    title: 'Comprar sacos de lixo de 100L',
-    status: 'doing',
-    assignee: 'Maria',
-    priority: 'Média',
-  },
-]
-
-const mockPolls: Poll[] = [
-  {
-    id: 'p1',
-    title: 'O que vai ter no Jantar de Sábado?',
-    description: 'Vamos fechar o cardápio da nossa última noite na chácara!',
-    deadline: new Date(Date.now() + 86400000 * 5).toISOString().slice(0, 16),
-    status: 'open',
-    options: [
-      { id: 'o1', text: 'Rodízio de Pizza', votes: 4 },
-      { id: 'o2', text: 'Noite do Hamburguer', votes: 7 },
-    ],
-  },
-]
-
-const mockParticipantsFinance: ParticipantFinance[] = [
-  { id: 'pf1', name: 'João (Você)', p1: 'paid', p2: 'paid', p3: 'pending', amount: 850 },
-  { id: 'pf2', name: 'Maria F.', p1: 'paid', p2: 'pending', p3: 'pending', amount: 450 },
-]
+const mockTasks: Task[] = []
+const mockPolls: Poll[] = []
 
 const AppContext = createContext<AppState | undefined>(undefined)
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile>(defaultUser)
+  const [user, setUserState] = useState<UserProfile>(defaultUser)
+  const [participants, setParticipants] = useState<ParticipantRecord[]>(mockParticipants)
+  const [pricingTiers, setPricingTiers] = useState<PricingTiers>(defaultPricingTiers)
+  const [beverageTotal, setBeverageTotal] = useState<number>(1500)
+
   const [groups, setGroups] = useState<Group[]>(mockGroups)
   const [tasks, setTasks] = useState<Task[]>(mockTasks)
   const [polls, setPolls] = useState<Poll[]>(mockPolls)
-  const [participantsFinance, setParticipantsFinance] =
-    useState<ParticipantFinance[]>(mockParticipantsFinance)
   const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements)
 
-  const toggleGovernance = () => setUser((prev) => ({ ...prev, isGovernance: !prev.isGovernance }))
+  const setUser = (newUser: UserProfile) => {
+    setUserState(newUser)
+    setParticipants((prev) =>
+      prev.map((p) => {
+        if (p.id === newUser.id) {
+          return {
+            ...p,
+            name: newUser.name,
+            hasConfirmed: newUser.hasConfirmed,
+            householdNames: newUser.householdNames,
+            daysAttending: newUser.daysAttending,
+            adults: newUser.adults,
+            childrenUnder10: newUser.childrenAges.filter((a) => a <= 10).length,
+            children11to16: newUser.childrenAges.filter((a) => a > 10 && a <= 16).length,
+            nannies: newUser.nannies,
+            drinkingAdults: newUser.drinkingAdults,
+          }
+        }
+        return p
+      }),
+    )
+  }
+
+  const confirmPresence = () => {
+    setUserState((prev) => ({ ...prev, hasConfirmed: true }))
+    setParticipants((prev) =>
+      prev.map((p) => (p.id === user.id ? { ...p, hasConfirmed: true } : p)),
+    )
+  }
+
+  const toggleGovernance = () =>
+    setUserState((prev) => ({ ...prev, isGovernance: !prev.isGovernance }))
+
+  const updateParticipant = (id: string, updates: Partial<ParticipantRecord>) => {
+    setParticipants((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)))
+  }
 
   const joinGroup = (groupId: string) => {
     setGroups((prev) =>
@@ -239,14 +319,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     )
   }
 
-  const updateParticipantFinance = (
-    id: string,
-    field: 'p1' | 'p2' | 'p3',
-    status: FinanceStatus,
-  ) => {
-    setParticipantsFinance((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: status } : p)))
-  }
-
   const addAnnouncement = (ann: Omit<Announcement, 'id' | 'date' | 'archived'>) => {
     setAnnouncements((prev) => [
       {
@@ -265,14 +337,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     )
   }
 
-  const totalGuests = useMemo(() => 12 + user.adults + user.children + user.nannies, [user])
+  const totalGuests = useMemo(
+    () =>
+      participants.reduce(
+        (acc, p) => acc + p.adults + p.childrenUnder10 + p.children11to16 + p.nannies,
+        0,
+      ),
+    [participants],
+  )
 
   return (
     <AppContext.Provider
       value={{
         user,
         setUser,
+        confirmPresence,
         toggleGovernance,
+        pricingTiers,
+        setPricingTiers,
+        beverageTotal,
+        setBeverageTotal,
+        participants,
+        updateParticipant,
         groups,
         joinGroup,
         addGroup,
@@ -282,8 +368,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         polls,
         votePoll,
         addPoll,
-        participantsFinance,
-        updateParticipantFinance,
         totalGuests,
         announcements,
         addAnnouncement,

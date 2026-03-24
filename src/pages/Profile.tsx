@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Save, Camera, Users, Baby, HandPlatter } from 'lucide-react'
+import { Save, Camera, Users, Baby, HandPlatter, Beer, X, Plus } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -27,6 +27,23 @@ export default function Profile() {
 
   const handleChange = (field: keyof typeof user, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleHouseholdNameChange = (index: number, val: string) => {
+    const newNames = [...formData.householdNames]
+    newNames[index] = val
+    handleChange('householdNames', newNames)
+  }
+
+  const addHouseholdName = () => {
+    handleChange('householdNames', [...formData.householdNames, ''])
+  }
+
+  const removeHouseholdName = (index: number) => {
+    handleChange(
+      'householdNames',
+      formData.householdNames.filter((_, i) => i !== index),
+    )
   }
 
   const handleChildrenChange = (count: number) => {
@@ -66,7 +83,6 @@ export default function Profile() {
         </p>
       </div>
 
-      {/* Permissions Mode Toggle - Kept for testing as requested */}
       <div className="flex flex-row items-center justify-between rounded-2xl border-2 border-primary/20 p-5 bg-gradient-to-r from-orange-50 to-amber-50 shadow-sm">
         <div className="space-y-1">
           <Label className="text-lg font-bold font-display text-primary flex items-center">
@@ -134,24 +150,12 @@ export default function Profile() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name" className="font-bold">
-                Nome Completo
+                Nome do Representante
               </Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleChange('name', e.target.value)}
-                className="bg-white border-amber-200 focus-visible:ring-primary"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="font-bold">
-                E-mail
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleChange('email', e.target.value)}
                 className="bg-white border-amber-200 focus-visible:ring-primary"
               />
             </div>
@@ -162,18 +166,101 @@ export default function Profile() {
       <Card className="shadow-sm border-amber-100 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardHeader className="bg-orange-50/50 border-b border-amber-100">
           <CardTitle className="flex items-center space-x-2 text-xl">
-            <Baby className="w-5 h-5 text-secondary" />
-            <span>Composição do Bonde</span>
+            <Users className="w-5 h-5 text-secondary" />
+            <span>Nomes do Bonde</span>
           </CardTitle>
           <CardDescription className="text-sm font-medium">
-            Quantas pessoas vão colar? (Isso ajuda no rateio da grana)
+            Quem exatamente está indo com você?
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-6">
+          {formData.householdNames.map((name, i) => (
+            <div key={i} className="flex gap-2">
+              <Input
+                value={name}
+                onChange={(e) => handleHouseholdNameChange(i, e.target.value)}
+                placeholder={`Pessoa ${i + 1}`}
+                className="bg-white border-amber-200"
+              />
+              {formData.householdNames.length > 1 && (
+                <Button
+                  variant="ghost"
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => removeHouseholdName(i)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          ))}
+          <Button
+            variant="outline"
+            onClick={addHouseholdName}
+            className="w-full border-dashed border-primary/40 text-primary hover:bg-primary/5"
+          >
+            <Plus className="w-4 h-4 mr-2" /> Adicionar Pessoa
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm border-amber-100 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
+        <CardHeader className="bg-orange-50/50 border-b border-amber-100">
+          <CardTitle className="flex items-center space-x-2 text-xl">
+            <Beer className="w-5 h-5 text-emerald-600" />
+            <span>Logística & Chopp</span>
+          </CardTitle>
+          <CardDescription className="text-sm font-medium">
+            Configure os dias e o rateio da bebida.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-6">
+          <div className="space-y-2">
+            <Label className="text-base font-bold">Quantos dias vão participar?</Label>
+            <Input
+              type="number"
+              min={1}
+              max={5}
+              value={formData.daysAttending}
+              onChange={(e) => handleChange('daysAttending', Number(e.target.value))}
+              className="w-32 font-bold text-lg border-amber-200 bg-white"
+            />
+            <p className="text-xs text-foreground/50 font-semibold">
+              O Farrão oficial dura até 5 dias (20 a 24 de Dezembro).
+            </p>
+          </div>
+          <Separator className="bg-amber-100" />
+          <div className="space-y-2">
+            <Label className="text-base font-bold">Quantos adultos vão no Chopp/Álcool?</Label>
+            <Input
+              type="number"
+              min={0}
+              max={formData.adults}
+              value={formData.drinkingAdults}
+              onChange={(e) => handleChange('drinkingAdults', Number(e.target.value))}
+              className="w-32 font-bold text-lg border-amber-200 bg-white"
+            />
+            <p className="text-xs text-foreground/50 font-semibold">
+              Isso será usado para dividir o custo exato das bebidas.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm border-amber-100 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
+        <CardHeader className="bg-orange-50/50 border-b border-amber-100">
+          <CardTitle className="flex items-center space-x-2 text-xl">
+            <Baby className="w-5 h-5 text-secondary" />
+            <span>Composição por Idade</span>
+          </CardTitle>
+          <CardDescription className="text-sm font-medium">
+            Necessário para o cálculo dos valores (Crianças têm desconto).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
           <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-amber-100">
             <div className="space-y-0.5">
-              <Label className="text-base font-bold text-foreground">Adultos (12+ anos)</Label>
-              <p className="text-xs font-semibold text-foreground/50">Incluindo você</p>
+              <Label className="text-base font-bold text-foreground">Adultos</Label>
+              <p className="text-xs font-semibold text-foreground/50">Incluindo você (17+ anos)</p>
             </div>
             <Input
               type="number"
@@ -188,7 +275,7 @@ export default function Profile() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label className="text-base font-bold text-foreground">Crianças</Label>
-                <p className="text-xs font-semibold text-foreground/50">Até 11 anos</p>
+                <p className="text-xs font-semibold text-foreground/50">Até 16 anos</p>
               </div>
               <Input
                 type="number"
@@ -214,6 +301,7 @@ export default function Profile() {
                       <Input
                         type="number"
                         min={0}
+                        max={16}
                         className="w-16 h-8 text-center bg-white border-green-200 font-bold"
                         value={age}
                         onChange={(e) => {
@@ -245,11 +333,11 @@ export default function Profile() {
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm border-amber-100 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
+      <Card className="shadow-sm border-amber-100 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden mb-12">
         <CardHeader className="bg-orange-50/50 border-b border-amber-100">
           <CardTitle className="flex items-center space-x-2 text-xl">
             <HandPlatter className="w-5 h-5 text-accent" />
-            <span>Comes e Bebes</span>
+            <span>Comida & Dieta</span>
           </CardTitle>
           <CardDescription className="text-sm font-medium">
             Pra ninguém passar vontade no churras

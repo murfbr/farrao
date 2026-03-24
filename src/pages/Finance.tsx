@@ -1,5 +1,16 @@
 import { useMemo, useRef } from 'react'
-import { CheckCircle2, Clock, XCircle, Download, Upload, ShieldAlert, Banknote } from 'lucide-react'
+import {
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Download,
+  Upload,
+  ShieldAlert,
+  Banknote,
+  Beer,
+  Settings,
+  Users,
+} from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Table,
@@ -9,33 +20,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-} from '@/components/ui/chart'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { PieChart, Pie, Cell } from 'recharts'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import useAppStore, { FinanceStatus } from '@/stores/useAppStore'
+import useAppStore, { ParticipantRecord, FinanceStatus } from '@/stores/useAppStore'
 import { cn } from '@/lib/utils'
-
-const expenseData = [
-  { name: 'Chácara', value: 4500, fill: 'var(--color-hospedagem)' },
-  { name: 'Churras/Comida', value: 2000, fill: 'var(--color-alimentacao)' },
-  { name: 'Bebidas/Chopp', value: 1200, fill: 'var(--color-bebidas)' },
-  { name: 'Limpeza/Som', value: 800, fill: 'var(--color-staff)' },
-]
-
-const chartConfig = {
-  hospedagem: { label: 'Chácara', color: 'hsl(var(--chart-1))' },
-  alimentacao: { label: 'Comida', color: 'hsl(var(--chart-2))' },
-  bebidas: { label: 'Bebidas', color: 'hsl(var(--chart-3))' },
-  staff: { label: 'Extras', color: 'hsl(var(--chart-4))' },
-}
 
 const getStatusIcon = (status: string) => {
   switch (status) {
@@ -51,19 +42,53 @@ const getStatusIcon = (status: string) => {
 }
 
 export default function Finance() {
-  const { user, participantsFinance, updateParticipantFinance } = useAppStore()
+  const {
+    user,
+    participants,
+    updateParticipant,
+    pricingTiers,
+    setPricingTiers,
+    beverageTotal,
+    setBeverageTotal,
+  } = useAppStore()
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const personalTotal = useMemo(() => {
-    const base = 400
-    return base * user.adults + base * 0.5 * user.children + base * 0.8 * user.nannies
-  }, [user])
+  const totalDrinkingDays = useMemo(
+    () => participants.reduce((acc, p) => acc + p.drinkingAdults * p.daysAttending, 0),
+    [participants],
+  )
+
+  const beveragePerDay = useMemo(
+    () => (totalDrinkingDays > 0 ? beverageTotal / totalDrinkingDays : 0),
+    [totalDrinkingDays, beverageTotal],
+  )
+
+  const calculateBaseFee = (p: ParticipantRecord) => {
+    if (p.socialQuotaOverride !== null) return p.socialQuotaOverride
+    return (
+      p.adults * pricingTiers.adults +
+      p.childrenUnder10 * pricingTiers.childrenUnder10 +
+      p.children11to16 * pricingTiers.children11to16 +
+      p.nannies * pricingTiers.nannies
+    )
+  }
+
+  const calculateBeverageFee = (p: ParticipantRecord) => {
+    return p.drinkingAdults * p.daysAttending * beveragePerDay
+  }
+
+  const myParticipant = participants.find((p) => p.id === user.id)
+  const myBaseFee = myParticipant ? calculateBaseFee(myParticipant) : 0
+  const myBeverageFee = myParticipant ? calculateBeverageFee(myParticipant) : 0
 
   const handleExportCSV = () => {
-    const header = 'Família,Parc 1,Parc 2,Parc 3,Valor Total\n'
-    const rows = participantsFinance
-      .map((p) => `${p.name},${p.p1},${p.p2},${p.p3},${p.amount}`)
+    const header = 'Família,Parc 1,Parc 2,Parc 3,Status Bebidas,Custo Base,Custo Bebidas,Total\n'
+    const rows = participants
+      .map(
+        (p) =>
+          `${p.name},${p.p1},${p.p2},${p.p3},${p.beverageStatus},${calculateBaseFee(p)},${calculateBeverageFee(p).toFixed(2)},${(calculateBaseFee(p) + calculateBeverageFee(p)).toFixed(2)}`,
+      )
       .join('\n')
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
@@ -84,9 +109,13 @@ export default function Finance() {
     }
   }
 
-  const toggleStatus = (id: string, field: 'p1' | 'p2' | 'p3', current: string) => {
+  const toggleStatus = (
+    id: string,
+    field: 'p1' | 'p2' | 'p3' | 'beverageStatus',
+    current: string,
+  ) => {
     const nextStatus = current === 'paid' ? 'pending' : current === 'pending' ? 'late' : 'paid'
-    updateParticipantFinance(id, field, nextStatus as FinanceStatus)
+    updateParticipant(id, { [field]: nextStatus as FinanceStatus })
   }
 
   const CSVButtons = () => (
@@ -104,7 +133,7 @@ export default function Finance() {
         onClick={() => fileInputRef.current?.click()}
         className="bg-white border-primary/20 hover:bg-primary/5 text-primary font-bold shadow-sm"
       >
-        <Upload className="w-4 h-4 mr-2" /> Importar CSV
+        <Upload className="w-4 h-4 mr-2" /> Importar
       </Button>
       <Button
         variant="outline"
@@ -112,65 +141,63 @@ export default function Finance() {
         onClick={handleExportCSV}
         className="bg-white border-secondary/20 hover:bg-secondary/5 text-secondary font-bold shadow-sm"
       >
-        <Download className="w-4 h-4 mr-2" /> Exportar Planilha
+        <Download className="w-4 h-4 mr-2" /> Exportar
       </Button>
     </div>
   )
 
   const TransparencyView = () => (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-end mb-2">
-        <CSVButtons />
-      </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Expense Allocation Chart */}
-        <Card className="lg:col-span-1 shadow-sm border-amber-200 bg-white/80 backdrop-blur-sm rounded-2xl">
-          <CardHeader>
-            <CardTitle className="font-display font-bold">Orçamento da Festa</CardTitle>
+        <Card className="lg:col-span-1 shadow-sm border-amber-200 bg-white/80 backdrop-blur-sm rounded-2xl flex flex-col">
+          <CardHeader className="bg-orange-50/50 border-b border-amber-100">
+            <CardTitle className="font-display font-bold">Resumo da Sua Família</CardTitle>
             <CardDescription className="font-medium text-foreground/60">
-              Estimativa total: R$ 8.500,00
+              Valor estimado baseado nas suas configurações de perfil.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center">
-            <ChartContainer config={chartConfig} className="w-full aspect-square max-h-[280px]">
-              <PieChart>
-                <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                <Pie
-                  data={expenseData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={65}
-                  strokeWidth={3}
-                  stroke="hsl(var(--background))"
-                >
-                  {expenseData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <ChartLegend
-                  content={<ChartLegendContent />}
-                  className="-translate-y-2 flex-wrap gap-2 text-xs font-bold"
-                />
-              </PieChart>
-            </ChartContainer>
-            <div className="mt-8 w-full p-5 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl border border-amber-200 shadow-inner">
-              <p className="text-sm font-bold text-foreground/50 uppercase tracking-widest text-center mb-1">
-                Previsão da Sua Família
-              </p>
-              <p className="text-3xl font-black font-display text-primary text-center">
-                R$ {personalTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
+          <CardContent className="flex-1 flex flex-col p-6 space-y-4">
+            <div className="flex justify-between items-center border-b border-amber-100 pb-3">
+              <span className="font-bold text-foreground/70 flex items-center">
+                <Users className="w-4 h-4 mr-2" /> Hospedagem / Festa
+              </span>
+              <span className="font-bold text-lg">
+                R$ {myBaseFee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="flex justify-between items-center border-b border-amber-100 pb-3">
+              <span className="font-bold text-foreground/70 flex items-center">
+                <Beer className="w-4 h-4 mr-2 text-emerald-600" /> Bebidas (Chopp)
+              </span>
+              <span className="font-bold text-lg text-emerald-600">
+                R$ {myBeverageFee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="mt-auto pt-6">
+              <div className="p-5 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl border border-amber-200 shadow-inner">
+                <p className="text-sm font-bold text-foreground/50 uppercase tracking-widest text-center mb-1">
+                  Total Previsto
+                </p>
+                <p className="text-3xl font-black font-display text-primary text-center">
+                  R${' '}
+                  {(myBaseFee + myBeverageFee).toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                  })}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Installments Table */}
         <Card className="lg:col-span-2 shadow-sm border-amber-200 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden flex flex-col">
-          <CardHeader className="bg-orange-50/30 border-b border-amber-100">
-            <CardTitle className="font-display font-bold text-xl">Pagamentos da Galera</CardTitle>
-            <CardDescription className="font-medium">
-              Transparência total. Quem já pagou e quem tá devendo a Vakinha.
-            </CardDescription>
+          <CardHeader className="bg-orange-50/30 border-b border-amber-100 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="font-display font-bold text-xl">Situação da Vakinha</CardTitle>
+              <CardDescription className="font-medium mt-1">
+                Acompanhamento das parcelas da festa principal (Hospedagem).
+              </CardDescription>
+            </div>
+            {user.isGovernance && <CSVButtons />}
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto flex-1">
             <Table>
@@ -189,12 +216,12 @@ export default function Finance() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participantsFinance.map((p, i) => (
+                {participants.map((p, i) => (
                   <TableRow
                     key={p.id}
                     className={cn(
                       'border-amber-50 transition-colors',
-                      i === 0 && 'bg-primary/5 hover:bg-primary/10',
+                      p.id === user.id && 'bg-primary/5 hover:bg-primary/10',
                     )}
                   >
                     <TableCell className="font-bold text-foreground text-base py-4">
@@ -230,38 +257,92 @@ export default function Finance() {
         <div className="flex items-center text-red-800">
           <ShieldAlert className="w-6 h-6 mr-3 shrink-0" />
           <p className="text-sm font-bold leading-relaxed">
-            ÁREA DA GOVERNANÇA: Clique nos ícones da tabela abaixo para alterar os status de
-            pagamento.
+            ÁREA DA GOVERNANÇA: Ajuste os preços base, cotas sociais e registre os pagamentos
+            clicando nos ícones da tabela.
           </p>
         </div>
-        <CSVButtons />
       </div>
 
+      <Card className="shadow-md border-amber-200 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden mb-6">
+        <CardHeader className="bg-orange-50/50 border-b border-amber-100">
+          <CardTitle className="font-display font-black text-xl text-foreground flex items-center">
+            <Settings className="w-5 h-5 text-primary mr-2" />
+            Motor de Preços Base
+          </CardTitle>
+          <CardDescription>Defina o valor da hospedagem por faixa etária.</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6 grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="space-y-2">
+            <Label className="font-bold">Adulto</Label>
+            <Input
+              type="number"
+              value={pricingTiers.adults}
+              onChange={(e) => setPricingTiers({ ...pricingTiers, adults: Number(e.target.value) })}
+              className="font-bold border-amber-200"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="font-bold">Crianças &lt; 10</Label>
+            <Input
+              type="number"
+              value={pricingTiers.childrenUnder10}
+              onChange={(e) =>
+                setPricingTiers({ ...pricingTiers, childrenUnder10: Number(e.target.value) })
+              }
+              className="font-bold border-amber-200"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="font-bold">Crianças 11 a 16</Label>
+            <Input
+              type="number"
+              value={pricingTiers.children11to16}
+              onChange={(e) =>
+                setPricingTiers({ ...pricingTiers, children11to16: Number(e.target.value) })
+              }
+              className="font-bold border-amber-200"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="font-bold">Staff / Babá</Label>
+            <Input
+              type="number"
+              value={pricingTiers.nannies}
+              onChange={(e) =>
+                setPricingTiers({ ...pricingTiers, nannies: Number(e.target.value) })
+              }
+              className="font-bold border-amber-200"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="shadow-md border-amber-200 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
-        <CardHeader className="bg-amber-50/50 border-b border-amber-100">
+        <CardHeader className="bg-amber-50/50 border-b border-amber-100 flex flex-row items-center justify-between">
           <CardTitle className="font-display font-black text-xl text-foreground flex items-center">
             <Banknote className="w-6 h-6 text-primary mr-2" />
-            Controle de Caixa
+            Controle Principal
           </CardTitle>
-          <CardDescription className="font-medium text-foreground/70">
-            Atualize quem fez o PIX.
-          </CardDescription>
+          <CSVButtons />
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader className="bg-white">
               <TableRow className="border-amber-100">
-                <TableHead className="w-[200px] font-bold text-foreground">Família</TableHead>
-                <TableHead className="text-center font-bold text-foreground">Parc. 1</TableHead>
-                <TableHead className="text-center font-bold text-foreground">Parc. 2</TableHead>
-                <TableHead className="text-center font-bold text-foreground">Parc. 3</TableHead>
+                <TableHead className="w-[180px] font-bold text-foreground">Família</TableHead>
+                <TableHead className="text-center font-bold text-foreground">P1</TableHead>
+                <TableHead className="text-center font-bold text-foreground">P2</TableHead>
+                <TableHead className="text-center font-bold text-foreground">P3</TableHead>
+                <TableHead className="text-center font-bold text-foreground w-[120px]">
+                  Cota Social (Manual)
+                </TableHead>
                 <TableHead className="text-right font-bold text-foreground pr-6">
-                  Total Estimado
+                  Total Calculado
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {participantsFinance.map((p) => (
+              {participants.map((p) => (
                 <TableRow key={p.id} className="border-amber-50 hover:bg-orange-50/30">
                   <TableCell className="font-bold text-foreground text-base py-4 pl-4">
                     {p.name}
@@ -269,7 +350,7 @@ export default function Finance() {
                   <TableCell className="text-center">
                     <button
                       onClick={() => toggleStatus(p.id, 'p1', p.p1)}
-                      className="p-2 hover:scale-110 hover:bg-orange-100 rounded-xl transition-all outline-none focus:ring-2 focus:ring-primary/40"
+                      className="p-2 hover:scale-110 hover:bg-orange-100 rounded-xl transition-all"
                     >
                       {getStatusIcon(p.p1)}
                     </button>
@@ -277,7 +358,7 @@ export default function Finance() {
                   <TableCell className="text-center">
                     <button
                       onClick={() => toggleStatus(p.id, 'p2', p.p2)}
-                      className="p-2 hover:scale-110 hover:bg-orange-100 rounded-xl transition-all outline-none focus:ring-2 focus:ring-primary/40"
+                      className="p-2 hover:scale-110 hover:bg-orange-100 rounded-xl transition-all"
                     >
                       {getStatusIcon(p.p2)}
                     </button>
@@ -285,13 +366,28 @@ export default function Finance() {
                   <TableCell className="text-center">
                     <button
                       onClick={() => toggleStatus(p.id, 'p3', p.p3)}
-                      className="p-2 hover:scale-110 hover:bg-orange-100 rounded-xl transition-all outline-none focus:ring-2 focus:ring-primary/40"
+                      className="p-2 hover:scale-110 hover:bg-orange-100 rounded-xl transition-all"
                     >
                       {getStatusIcon(p.p3)}
                     </button>
                   </TableCell>
+                  <TableCell className="text-center">
+                    <Input
+                      type="number"
+                      placeholder="Padrão"
+                      className={cn(
+                        'w-24 text-center font-bold mx-auto',
+                        p.socialQuotaOverride !== null ? 'border-primary text-primary' : '',
+                      )}
+                      value={p.socialQuotaOverride ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? null : Number(e.target.value)
+                        updateParticipant(p.id, { socialQuotaOverride: val })
+                      }}
+                    />
+                  </TableCell>
                   <TableCell className="text-right font-black text-lg text-primary pr-6">
-                    R$ {p.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    R$ {calculateBaseFee(p).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </TableCell>
                 </TableRow>
               ))}
@@ -302,34 +398,149 @@ export default function Finance() {
     </div>
   )
 
+  const BeverageView = () => (
+    <div className="space-y-6 animate-fade-in">
+      <Card className="shadow-md border-amber-200 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
+        <CardHeader className="bg-emerald-50/50 border-b border-emerald-100">
+          <CardTitle className="font-display font-black text-xl text-emerald-800 flex items-center">
+            <Beer className="w-6 h-6 text-emerald-600 mr-2" />
+            Módulo de Rateio: Bebidas & Chopp
+          </CardTitle>
+          <CardDescription>
+            Divisão exata baseada nos dias de presença e adultos que bebem.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="mb-8 p-5 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 flex flex-col md:flex-row gap-6 items-center justify-between shadow-sm">
+            {user.isGovernance ? (
+              <div className="space-y-2 flex-1 w-full md:w-auto">
+                <Label className="font-bold text-emerald-900 text-base">
+                  Custo Total Estimado de Bebidas (R$)
+                </Label>
+                <Input
+                  type="number"
+                  value={beverageTotal}
+                  onChange={(e) => setBeverageTotal(Number(e.target.value))}
+                  className="font-black text-2xl h-14 border-emerald-300 bg-white text-emerald-700"
+                />
+              </div>
+            ) : (
+              <div className="flex-1">
+                <p className="text-sm font-bold text-emerald-700/60 uppercase tracking-widest mb-1">
+                  Custo Total Estimado
+                </p>
+                <p className="text-3xl font-black text-emerald-800">
+                  R$ {beverageTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            )}
+            <div className="flex gap-4 w-full md:w-auto">
+              <div className="bg-white p-4 rounded-xl border border-emerald-100 text-center flex-1 md:px-6 shadow-sm">
+                <p className="text-xs font-bold text-emerald-600/70 uppercase mb-1">Dias Totais</p>
+                <p className="text-2xl font-black text-emerald-700">{totalDrinkingDays}</p>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-emerald-100 text-center flex-1 md:px-6 shadow-sm">
+                <p className="text-xs font-bold text-emerald-600/70 uppercase mb-1">Custo / Dia</p>
+                <p className="text-2xl font-black text-emerald-600">
+                  R$ {beveragePerDay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-emerald-100">
+            <Table>
+              <TableHeader className="bg-emerald-50/50">
+                <TableRow className="border-emerald-100">
+                  <TableHead className="font-bold text-emerald-900 w-[200px]">Família</TableHead>
+                  <TableHead className="text-center font-bold text-emerald-900">Adultos</TableHead>
+                  <TableHead className="text-center font-bold text-emerald-900">Dias</TableHead>
+                  <TableHead className="text-center font-bold text-emerald-900">
+                    Status (Cota Única)
+                  </TableHead>
+                  <TableHead className="text-right font-bold text-emerald-900 pr-6">
+                    Total Chopp
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {participants.map((p) => (
+                  <TableRow key={p.id} className="border-emerald-50 hover:bg-emerald-50/30">
+                    <TableCell className="font-bold text-foreground py-4 pl-4">{p.name}</TableCell>
+                    <TableCell className="text-center font-medium">{p.drinkingAdults}</TableCell>
+                    <TableCell className="text-center font-medium">{p.daysAttending}</TableCell>
+                    <TableCell className="text-center">
+                      {user.isGovernance ? (
+                        <button
+                          onClick={() => toggleStatus(p.id, 'beverageStatus', p.beverageStatus)}
+                          className="p-2 hover:scale-110 hover:bg-emerald-100 rounded-xl transition-all"
+                        >
+                          {getStatusIcon(p.beverageStatus)}
+                        </button>
+                      ) : (
+                        <div className="p-2">{getStatusIcon(p.beverageStatus)}</div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-black text-lg text-emerald-600 pr-6">
+                      R${' '}
+                      {calculateBeverageFee(p).toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                      })}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+
   return (
     <div className="space-y-6">
       <div className="mb-8">
         <h1 className="text-3xl font-black font-display text-foreground">Finanças do Farrão</h1>
         <p className="text-foreground/60 text-base mt-1 font-medium">
-          Acompanhe a arrecadação da Vakinha e o orçamento da festa.
+          Acompanhe a arrecadação e os custos de hospedagem e bebidas.
         </p>
       </div>
 
       <Tabs defaultValue="transparency" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-[500px] mb-8 bg-white border border-amber-200 p-1 rounded-xl shadow-sm h-auto">
+        <TabsList
+          className={cn(
+            'grid w-full mb-8 bg-white border border-amber-200 p-1 rounded-xl shadow-sm h-auto',
+            user.isGovernance
+              ? 'grid-cols-1 sm:grid-cols-3'
+              : 'grid-cols-1 sm:grid-cols-2 max-w-[500px]',
+          )}
+        >
           <TabsTrigger
             value="transparency"
             className="rounded-lg py-2.5 font-bold data-[state=active]:bg-primary data-[state=active]:text-white"
           >
-            Transparência
+            Visão Geral
+          </TabsTrigger>
+          <TabsTrigger
+            value="beverage"
+            className="rounded-lg py-2.5 font-bold data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
+          >
+            Bebidas & Chopp
           </TabsTrigger>
           {user.isGovernance && (
             <TabsTrigger
               value="control"
               className="rounded-lg py-2.5 font-bold data-[state=active]:bg-red-500 data-[state=active]:text-white"
             >
-              Controle e Acompanhamento
+              Controle (Admin)
             </TabsTrigger>
           )}
         </TabsList>
         <TabsContent value="transparency" className="mt-0 outline-none">
           <TransparencyView />
+        </TabsContent>
+        <TabsContent value="beverage" className="mt-0 outline-none">
+          <BeverageView />
         </TabsContent>
         {user.isGovernance && (
           <TabsContent value="control" className="mt-0 outline-none">
