@@ -1,5 +1,15 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { Tent, ClipboardList, Mic, Wallet, Users, Bell, ShieldAlert, Music } from 'lucide-react'
+import {
+  Tent,
+  ClipboardList,
+  Mic,
+  Wallet,
+  Users,
+  User,
+  Bell,
+  ShieldAlert,
+  Music,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -8,10 +18,11 @@ import useAppStore from '@/stores/useAppStore'
 
 const NAV_ITEMS = [
   { path: '/', label: 'A Tenda', icon: Tent },
+  { path: '/participants', label: 'A Lista', icon: Users },
   { path: '/tasks', label: 'Tarefas', icon: ClipboardList },
   { path: '/voting', label: 'Votações', icon: Mic },
   { path: '/finance', label: 'Finanças', icon: Wallet },
-  { path: '/profile', label: 'Minha Família', icon: Users },
+  { path: '/profile', label: 'Meu Perfil', icon: User },
 ]
 
 export default function Layout() {

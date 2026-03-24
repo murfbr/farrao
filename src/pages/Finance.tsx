@@ -55,7 +55,11 @@ export default function Finance() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const totalDrinkingDays = useMemo(
-    () => participants.reduce((acc, p) => acc + p.drinkingAdults * p.daysAttending, 0),
+    () =>
+      participants.reduce(
+        (acc, p) => acc + p.members.filter((m) => m.isDrinking).length * p.daysAttending,
+        0,
+      ),
     [participants],
   )
 
@@ -66,16 +70,22 @@ export default function Finance() {
 
   const calculateBaseFee = (p: ParticipantRecord) => {
     if (p.socialQuotaOverride !== null) return p.socialQuotaOverride
+    const adults = p.members.filter((m) => m.category === 'adult').length
+    const child10 = p.members.filter((m) => m.category === 'child_under_10').length
+    const child16 = p.members.filter((m) => m.category === 'child_11_to_16').length
+    const nannies = p.members.filter((m) => m.category === 'nanny').length
+
     return (
-      p.adults * pricingTiers.adults +
-      p.childrenUnder10 * pricingTiers.childrenUnder10 +
-      p.children11to16 * pricingTiers.children11to16 +
-      p.nannies * pricingTiers.nannies
+      adults * pricingTiers.adults +
+      child10 * pricingTiers.childrenUnder10 +
+      child16 * pricingTiers.children11to16 +
+      nannies * pricingTiers.nannies
     )
   }
 
   const calculateBeverageFee = (p: ParticipantRecord) => {
-    return p.drinkingAdults * p.daysAttending * beveragePerDay
+    const drinkingAdults = p.members.filter((m) => m.isDrinking).length
+    return drinkingAdults * p.daysAttending * beveragePerDay
   }
 
   const myParticipant = participants.find((p) => p.id === user.id)
@@ -83,11 +93,12 @@ export default function Finance() {
   const myBeverageFee = myParticipant ? calculateBeverageFee(myParticipant) : 0
 
   const handleExportCSV = () => {
-    const header = 'Família,Parc 1,Parc 2,Parc 3,Status Bebidas,Custo Base,Custo Bebidas,Total\n'
+    const header =
+      'Família,Parc 1,Parc 2,Parc 3,Status Bebidas,Qtd Membros,Custo Base,Custo Bebidas,Total\n'
     const rows = participants
       .map(
         (p) =>
-          `${p.name},${p.p1},${p.p2},${p.p3},${p.beverageStatus},${calculateBaseFee(p)},${calculateBeverageFee(p).toFixed(2)},${(calculateBaseFee(p) + calculateBeverageFee(p)).toFixed(2)}`,
+          `${p.name},${p.p1},${p.p2},${p.p3},${p.beverageStatus},${p.members.length},${calculateBaseFee(p)},${calculateBeverageFee(p).toFixed(2)},${(calculateBaseFee(p) + calculateBeverageFee(p)).toFixed(2)}`,
       )
       .join('\n')
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' })
@@ -453,7 +464,9 @@ export default function Finance() {
               <TableHeader className="bg-emerald-50/50">
                 <TableRow className="border-emerald-100">
                   <TableHead className="font-bold text-emerald-900 w-[200px]">Família</TableHead>
-                  <TableHead className="text-center font-bold text-emerald-900">Adultos</TableHead>
+                  <TableHead className="text-center font-bold text-emerald-900">
+                    Adultos (Chopp)
+                  </TableHead>
                   <TableHead className="text-center font-bold text-emerald-900">Dias</TableHead>
                   <TableHead className="text-center font-bold text-emerald-900">
                     Status (Cota Única)
@@ -467,7 +480,9 @@ export default function Finance() {
                 {participants.map((p) => (
                   <TableRow key={p.id} className="border-emerald-50 hover:bg-emerald-50/30">
                     <TableCell className="font-bold text-foreground py-4 pl-4">{p.name}</TableCell>
-                    <TableCell className="text-center font-medium">{p.drinkingAdults}</TableCell>
+                    <TableCell className="text-center font-medium">
+                      {p.members.filter((m) => m.isDrinking).length}
+                    </TableCell>
                     <TableCell className="text-center font-medium">{p.daysAttending}</TableCell>
                     <TableCell className="text-center">
                       {user.isGovernance ? (

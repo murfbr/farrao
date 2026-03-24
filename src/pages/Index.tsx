@@ -95,10 +95,7 @@ export default function Index() {
   )
 
   const confirmedParticipants = participants.filter((p) => p.hasConfirmed)
-  const confirmedPeople = confirmedParticipants.reduce(
-    (acc, p) => acc + p.adults + p.childrenUnder10 + p.children11to16 + p.nannies,
-    0,
-  )
+  const confirmedPeople = confirmedParticipants.reduce((acc, p) => acc + p.members.length, 0)
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -209,21 +206,22 @@ export default function Index() {
                     >
                       <h4 className="font-bold text-foreground text-lg">{p.name}</h4>
                       <p className="text-sm text-foreground/60 font-medium mt-1 mb-2">
-                        {p.householdNames.join(', ')}
+                        {p.members.map((m) => m.name || 'Sem nome').join(', ')}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <Badge
                           variant="outline"
                           className="bg-white border-amber-200 text-[10px] uppercase font-bold"
                         >
-                          {p.adults} Adultos
+                          {p.members.filter((m) => m.category === 'adult').length} Adultos
                         </Badge>
-                        {(p.childrenUnder10 > 0 || p.children11to16 > 0) && (
+                        {p.members.filter((m) => m.category.startsWith('child')).length > 0 && (
                           <Badge
                             variant="outline"
                             className="bg-white border-amber-200 text-[10px] uppercase font-bold"
                           >
-                            {p.childrenUnder10 + p.children11to16} Crianças
+                            {p.members.filter((m) => m.category.startsWith('child')).length}{' '}
+                            Crianças
                           </Badge>
                         )}
                         <Badge
@@ -235,6 +233,9 @@ export default function Index() {
                       </div>
                     </div>
                   ))}
+                  <Button asChild className="w-full mt-4 font-bold rounded-xl" variant="outline">
+                    <Link to="/participants">Ver Lista Completa</Link>
+                  </Button>
                 </div>
               </SheetContent>
             </Sheet>

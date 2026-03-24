@@ -8,6 +8,7 @@ import Profile from './pages/Profile'
 import Tasks from './pages/Tasks'
 import Finance from './pages/Finance'
 import Voting from './pages/Voting'
+import Participants from './pages/Participants'
 import NotFound from './pages/NotFound'
 import { AppProvider } from './stores/useAppStore'
 
@@ -20,10 +21,11 @@ const App = () => (
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<Index />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/participants" element={<Participants />} />
             <Route path="/tasks" element={<Tasks />} />
-            <Route path="/finance" element={<Finance />} />
             <Route path="/voting" element={<Voting />} />
+            <Route path="/finance" element={<Finance />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

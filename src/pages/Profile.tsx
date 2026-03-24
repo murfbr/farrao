@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Save, Camera, Users, Baby, HandPlatter, Beer, X, Plus } from 'lucide-react'
+import { Save, Camera, Users, HandPlatter, X, Plus, Calendar } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -15,8 +15,15 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import useAppStore from '@/stores/useAppStore'
+import useAppStore, { MemberCategory } from '@/stores/useAppStore'
 
 export default function Profile() {
   const { user, setUser } = useAppStore()
@@ -29,34 +36,33 @@ export default function Profile() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleHouseholdNameChange = (index: number, val: string) => {
-    const newNames = [...formData.householdNames]
-    newNames[index] = val
-    handleChange('householdNames', newNames)
+  const addMember = () => {
+    setFormData((prev) => ({
+      ...prev,
+      members: [
+        ...prev.members,
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          name: '',
+          category: 'adult',
+          isDrinking: false,
+        },
+      ],
+    }))
   }
 
-  const addHouseholdName = () => {
-    handleChange('householdNames', [...formData.householdNames, ''])
+  const updateMember = (id: string, field: string, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      members: prev.members.map((m) => (m.id === id ? { ...m, [field]: value } : m)),
+    }))
   }
 
-  const removeHouseholdName = (index: number) => {
-    handleChange(
-      'householdNames',
-      formData.householdNames.filter((_, i) => i !== index),
-    )
-  }
-
-  const handleChildrenChange = (count: number) => {
-    const validCount = Math.max(0, count)
-    setFormData((prev) => {
-      let newAges = [...prev.childrenAges]
-      if (validCount > newAges.length) {
-        newAges = [...newAges, ...Array(validCount - newAges.length).fill(0)]
-      } else if (validCount < newAges.length) {
-        newAges = newAges.slice(0, validCount)
-      }
-      return { ...prev, children: validCount, childrenAges: newAges }
-    })
+  const removeMember = (id: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      members: prev.members.filter((m) => m.id !== id),
+    }))
   }
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,54 +169,103 @@ export default function Profile() {
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm border-amber-100 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
-        <CardHeader className="bg-orange-50/50 border-b border-amber-100">
-          <CardTitle className="flex items-center space-x-2 text-xl">
-            <Users className="w-5 h-5 text-secondary" />
-            <span>Nomes do Bonde</span>
-          </CardTitle>
-          <CardDescription className="text-sm font-medium">
-            Quem exatamente está indo com você?
-          </CardDescription>
+      <Card className="shadow-sm border-amber-100 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden mb-8">
+        <CardHeader className="bg-orange-50/50 border-b border-amber-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <CardTitle className="flex items-center space-x-2 text-xl">
+              <Users className="w-5 h-5 text-secondary" />
+              <span>Membros da Família</span>
+            </CardTitle>
+            <CardDescription className="text-sm font-medium mt-1">
+              Quem exatamente está indo com você? Adicione o nome e idade/tipo.
+            </CardDescription>
+          </div>
+          <Button
+            onClick={addMember}
+            size="sm"
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary/5 font-bold shrink-0 shadow-sm w-full sm:w-auto"
+          >
+            <Plus className="w-4 h-4 mr-2" /> Novo Membro
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4 pt-6">
-          {formData.householdNames.map((name, i) => (
-            <div key={i} className="flex gap-2">
-              <Input
-                value={name}
-                onChange={(e) => handleHouseholdNameChange(i, e.target.value)}
-                placeholder={`Pessoa ${i + 1}`}
-                className="bg-white border-amber-200"
-              />
-              {formData.householdNames.length > 1 && (
+          {formData.members.map((m) => (
+            <div
+              key={m.id}
+              className="flex flex-col sm:flex-row gap-4 p-4 bg-orange-50/30 border border-amber-200 rounded-xl items-start sm:items-end transition-all hover:shadow-md"
+            >
+              <div className="w-full flex-1 space-y-2">
+                <Label className="font-bold text-foreground">Nome Completo</Label>
+                <Input
+                  value={m.name}
+                  onChange={(e) => updateMember(m.id, 'name', e.target.value)}
+                  className="bg-white border-amber-200 focus-visible:ring-primary"
+                  placeholder="Ex: João da Silva"
+                />
+              </div>
+              <div className="w-full sm:w-48 space-y-2">
+                <Label className="font-bold text-foreground">Categoria</Label>
+                <Select
+                  value={m.category}
+                  onValueChange={(val: MemberCategory) => updateMember(m.id, 'category', val)}
+                >
+                  <SelectTrigger className="bg-white border-amber-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="adult">Adulto</SelectItem>
+                    <SelectItem value="child_under_10">Criança (até 10)</SelectItem>
+                    <SelectItem value="child_11_to_16">Criança (11 a 16)</SelectItem>
+                    <SelectItem value="nanny">Babá / Staff</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
+                {m.category === 'adult' ? (
+                  <div className="flex flex-col items-center space-y-2">
+                    <Label className="font-bold text-foreground text-[10px] uppercase tracking-wider text-center">
+                      Bebe Chopp?
+                    </Label>
+                    <Switch
+                      checked={m.isDrinking}
+                      onCheckedChange={(val) => updateMember(m.id, 'isDrinking', val)}
+                      className="data-[state=checked]:bg-emerald-500 scale-[0.85]"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-[66px]" />
+                )}
                 <Button
                   variant="ghost"
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => removeHouseholdName(i)}
+                  size="icon"
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50 mt-4 sm:mt-0 rounded-xl shrink-0"
+                  onClick={() => removeMember(m.id)}
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </Button>
-              )}
+              </div>
             </div>
           ))}
-          <Button
-            variant="outline"
-            onClick={addHouseholdName}
-            className="w-full border-dashed border-primary/40 text-primary hover:bg-primary/5"
-          >
-            <Plus className="w-4 h-4 mr-2" /> Adicionar Pessoa
-          </Button>
+          {formData.members.length === 0 && (
+            <div className="text-center bg-white border border-dashed border-amber-200 p-8 rounded-xl">
+              <p className="text-foreground/50 font-bold">Nenhum membro adicionado.</p>
+              <p className="text-foreground/40 text-sm mt-1">
+                Adicione você e sua turma para continuar.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <Card className="shadow-sm border-amber-100 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardHeader className="bg-orange-50/50 border-b border-amber-100">
           <CardTitle className="flex items-center space-x-2 text-xl">
-            <Beer className="w-5 h-5 text-emerald-600" />
-            <span>Logística & Chopp</span>
+            <Calendar className="w-5 h-5 text-emerald-600" />
+            <span>Dias de Presença</span>
           </CardTitle>
           <CardDescription className="text-sm font-medium">
-            Configure os dias e o rateio da bebida.
+            Configure os dias que vão curtir a festa.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
@@ -227,108 +282,6 @@ export default function Profile() {
             <p className="text-xs text-foreground/50 font-semibold">
               O Farrão oficial dura até 5 dias (20 a 24 de Dezembro).
             </p>
-          </div>
-          <Separator className="bg-amber-100" />
-          <div className="space-y-2">
-            <Label className="text-base font-bold">Quantos adultos vão no Chopp/Álcool?</Label>
-            <Input
-              type="number"
-              min={0}
-              max={formData.adults}
-              value={formData.drinkingAdults}
-              onChange={(e) => handleChange('drinkingAdults', Number(e.target.value))}
-              className="w-32 font-bold text-lg border-amber-200 bg-white"
-            />
-            <p className="text-xs text-foreground/50 font-semibold">
-              Isso será usado para dividir o custo exato das bebidas.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-sm border-amber-100 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
-        <CardHeader className="bg-orange-50/50 border-b border-amber-100">
-          <CardTitle className="flex items-center space-x-2 text-xl">
-            <Baby className="w-5 h-5 text-secondary" />
-            <span>Composição por Idade</span>
-          </CardTitle>
-          <CardDescription className="text-sm font-medium">
-            Necessário para o cálculo dos valores (Crianças têm desconto).
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-6">
-          <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-amber-100">
-            <div className="space-y-0.5">
-              <Label className="text-base font-bold text-foreground">Adultos</Label>
-              <p className="text-xs font-semibold text-foreground/50">Incluindo você (17+ anos)</p>
-            </div>
-            <Input
-              type="number"
-              min={1}
-              className="w-20 text-center font-bold text-lg border-amber-200 focus-visible:ring-primary"
-              value={formData.adults}
-              onChange={(e) => handleChange('adults', parseInt(e.target.value) || 0)}
-            />
-          </div>
-
-          <div className="flex flex-col space-y-4 p-3 bg-white rounded-xl border border-amber-100">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-base font-bold text-foreground">Crianças</Label>
-                <p className="text-xs font-semibold text-foreground/50">Até 16 anos</p>
-              </div>
-              <Input
-                type="number"
-                min={0}
-                className="w-20 text-center font-bold text-lg border-amber-200 focus-visible:ring-primary"
-                value={formData.children}
-                onChange={(e) => handleChildrenChange(parseInt(e.target.value) || 0)}
-              />
-            </div>
-
-            {formData.children > 0 && (
-              <div className="space-y-3 pt-3 border-t border-amber-100">
-                <Label className="text-sm font-bold text-secondary">Idade das Crianças</Label>
-                <div className="flex flex-wrap gap-4">
-                  {formData.childrenAges.map((age, i) => (
-                    <div
-                      key={i}
-                      className="flex flex-col space-y-1.5 bg-green-50 p-2 rounded-lg border border-green-100"
-                    >
-                      <span className="text-[10px] font-bold text-green-700 uppercase tracking-widest text-center">
-                        Cr. {i + 1}
-                      </span>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={16}
-                        className="w-16 h-8 text-center bg-white border-green-200 font-bold"
-                        value={age}
-                        onChange={(e) => {
-                          const newAges = [...formData.childrenAges]
-                          newAges[i] = parseInt(e.target.value) || 0
-                          handleChange('childrenAges', newAges)
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-amber-100">
-            <div className="space-y-0.5">
-              <Label className="text-base font-bold text-foreground">Babás / Acompanhantes</Label>
-              <p className="text-xs font-semibold text-foreground/50">Staff extra da família</p>
-            </div>
-            <Input
-              type="number"
-              min={0}
-              className="w-20 text-center font-bold text-lg border-amber-200 focus-visible:ring-primary"
-              value={formData.nannies}
-              onChange={(e) => handleChange('nannies', parseInt(e.target.value) || 0)}
-            />
           </div>
         </CardContent>
       </Card>

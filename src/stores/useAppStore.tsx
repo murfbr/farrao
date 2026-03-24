@@ -1,17 +1,21 @@
 import React, { createContext, useContext, useState, useMemo } from 'react'
 
+export type MemberCategory = 'adult' | 'child_under_10' | 'child_11_to_16' | 'nanny'
+
+export type FamilyMember = {
+  id: string
+  name: string
+  category: MemberCategory
+  isDrinking: boolean
+}
+
 export type UserProfile = {
   id: string
   name: string
   email: string
   hasConfirmed: boolean
-  householdNames: string[]
+  members: FamilyMember[]
   daysAttending: number
-  adults: number
-  children: number
-  childrenAges: number[]
-  nannies: number
-  drinkingAdults: number
   vegetarian: boolean
   restrictions: string
   isGovernance: boolean
@@ -54,13 +58,8 @@ export type ParticipantRecord = {
   id: string
   name: string
   hasConfirmed: boolean
-  householdNames: string[]
+  members: FamilyMember[]
   daysAttending: number
-  adults: number
-  childrenUnder10: number
-  children11to16: number
-  nannies: number
-  drinkingAdults: number
   p1: FinanceStatus
   p2: FinanceStatus
   p3: FinanceStatus
@@ -118,13 +117,12 @@ const defaultUser: UserProfile = {
   name: 'João Silva',
   email: 'joao@exemplo.com',
   hasConfirmed: false,
-  householdNames: ['João Silva', 'Maria Silva', 'Pedrinho'],
+  members: [
+    { id: 'u1-1', name: 'João Silva', category: 'adult', isDrinking: true },
+    { id: 'u1-2', name: 'Maria Silva', category: 'adult', isDrinking: true },
+    { id: 'u1-3', name: 'Pedrinho', category: 'child_under_10', isDrinking: false },
+  ],
   daysAttending: 4,
-  adults: 2,
-  children: 1,
-  childrenAges: [5],
-  nannies: 0,
-  drinkingAdults: 2,
   vegetarian: false,
   restrictions: '',
   isGovernance: true,
@@ -135,13 +133,12 @@ const mockParticipants: ParticipantRecord[] = [
     id: 'u1',
     name: 'João Silva (Você)',
     hasConfirmed: false,
-    householdNames: ['João Silva', 'Maria Silva', 'Pedrinho'],
+    members: [
+      { id: 'u1-1', name: 'João Silva', category: 'adult', isDrinking: true },
+      { id: 'u1-2', name: 'Maria Silva', category: 'adult', isDrinking: true },
+      { id: 'u1-3', name: 'Pedrinho', category: 'child_under_10', isDrinking: false },
+    ],
     daysAttending: 4,
-    adults: 2,
-    childrenUnder10: 1,
-    children11to16: 0,
-    nannies: 0,
-    drinkingAdults: 2,
     p1: 'paid',
     p2: 'paid',
     p3: 'pending',
@@ -152,13 +149,12 @@ const mockParticipants: ParticipantRecord[] = [
     id: 'p2',
     name: 'Família Souza',
     hasConfirmed: true,
-    householdNames: ['Carlos Souza', 'Ana Souza', 'Bia Souza'],
+    members: [
+      { id: 'p2-1', name: 'Carlos Souza', category: 'adult', isDrinking: true },
+      { id: 'p2-2', name: 'Ana Souza', category: 'adult', isDrinking: true },
+      { id: 'p2-3', name: 'Bia Souza', category: 'child_11_to_16', isDrinking: false },
+    ],
     daysAttending: 3,
-    adults: 2,
-    childrenUnder10: 0,
-    children11to16: 1,
-    nannies: 0,
-    drinkingAdults: 2,
     p1: 'paid',
     p2: 'pending',
     p3: 'pending',
@@ -168,14 +164,9 @@ const mockParticipants: ParticipantRecord[] = [
   {
     id: 'p3',
     name: 'Tio Roberto',
-    hasConfirmed: false,
-    householdNames: ['Roberto'],
+    hasConfirmed: true,
+    members: [{ id: 'p3-1', name: 'Roberto', category: 'adult', isDrinking: true }],
     daysAttending: 2,
-    adults: 1,
-    childrenUnder10: 0,
-    children11to16: 0,
-    nannies: 0,
-    drinkingAdults: 1,
     p1: 'late',
     p2: 'pending',
     p3: 'pending',
@@ -238,13 +229,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...p,
             name: newUser.name,
             hasConfirmed: newUser.hasConfirmed,
-            householdNames: newUser.householdNames,
+            members: newUser.members,
             daysAttending: newUser.daysAttending,
-            adults: newUser.adults,
-            childrenUnder10: newUser.childrenAges.filter((a) => a <= 10).length,
-            children11to16: newUser.childrenAges.filter((a) => a > 10 && a <= 16).length,
-            nannies: newUser.nannies,
-            drinkingAdults: newUser.drinkingAdults,
           }
         }
         return p
@@ -338,11 +324,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   const totalGuests = useMemo(
-    () =>
-      participants.reduce(
-        (acc, p) => acc + p.adults + p.childrenUnder10 + p.children11to16 + p.nannies,
-        0,
-      ),
+    () => participants.reduce((acc, p) => acc + p.members.length, 0),
     [participants],
   )
 
