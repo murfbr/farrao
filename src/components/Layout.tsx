@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { Home, CheckSquare, Vote, DollarSign, User, Bell, ShieldAlert } from 'lucide-react'
+import { Tent, ClipboardList, Mic, Wallet, Users, Bell, ShieldAlert, Music } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -7,11 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import useAppStore from '@/stores/useAppStore'
 
 const NAV_ITEMS = [
-  { path: '/', label: 'Início', icon: Home },
-  { path: '/tasks', label: 'Tarefas', icon: CheckSquare },
-  { path: '/voting', label: 'Votações', icon: Vote },
-  { path: '/finance', label: 'Finanças', icon: DollarSign },
-  { path: '/profile', label: 'Perfil', icon: User },
+  { path: '/', label: 'A Tenda', icon: Tent },
+  { path: '/tasks', label: 'Tarefas', icon: ClipboardList },
+  { path: '/voting', label: 'Votações', icon: Mic },
+  { path: '/finance', label: 'Finanças', icon: Wallet },
+  { path: '/profile', label: 'Minha Família', icon: Users },
 ]
 
 export default function Layout() {
@@ -19,14 +19,21 @@ export default function Layout() {
   const { user } = useAppStore()
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden text-slate-700">
+    <div className="flex h-screen bg-transparent overflow-hidden text-foreground">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 z-10 shadow-[2px_0_15px_-3px_rgba(0,0,0,0.05)]">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-primary tracking-tight">AmigoTrip</h1>
-          <p className="text-xs text-slate-500 mt-1">Organizador Anual</p>
+      <aside className="hidden md:flex flex-col w-64 bg-white/60 backdrop-blur-xl border-r border-amber-200/50 z-10 shadow-[2px_0_15px_-3px_rgba(255,102,0,0.05)]">
+        <div className="p-6 flex items-center space-x-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-primary to-rose-500 rounded-xl flex items-center justify-center text-white shadow-md shadow-primary/30 rotate-3">
+            <Music className="w-6 h-6 -rotate-3" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold font-display text-primary tracking-tight">Farrão</h1>
+            <p className="text-[10px] uppercase font-bold tracking-widest text-primary/60 mt-0.5">
+              Encontro Anual
+            </p>
+          </div>
         </div>
-        <nav className="flex-1 px-4 space-y-2">
+        <nav className="flex-1 px-4 space-y-2 mt-4">
           {NAV_ITEMS.map((item) => {
             const isActive = location.pathname === item.path
             return (
@@ -34,14 +41,14 @@ export default function Layout() {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  'flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200',
+                  'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200',
                   isActive
-                    ? 'bg-primary/10 text-primary font-semibold shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                    ? 'bg-gradient-to-r from-primary to-orange-400 text-white shadow-md shadow-primary/20 scale-105 origin-left'
+                    : 'text-foreground/70 hover:bg-orange-100/50 hover:text-primary',
                 )}
               >
                 <item.icon className="w-5 h-5" />
-                <span>{item.label}</span>
+                <span className="font-semibold">{item.label}</span>
               </Link>
             )
           })}
@@ -51,35 +58,46 @@ export default function Layout() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full relative">
         {/* Header */}
-        <header className="flex-none h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 flex items-center justify-between sticky top-0 z-20">
-          <div className="flex flex-col">
-            <h2 className="text-lg font-bold text-slate-800 md:hidden">AmigoTrip</h2>
-            <h2 className="text-lg font-bold text-slate-800 hidden md:block">
-              Encontro Anual 2024
+        <header className="flex-none h-16 bg-white/40 backdrop-blur-md border-b border-amber-200/50 px-4 md:px-8 flex items-center justify-between sticky top-0 z-20">
+          <div className="flex items-center space-x-3 md:hidden">
+            <div className="w-8 h-8 bg-gradient-to-br from-primary to-rose-500 rounded-lg flex items-center justify-center text-white shadow-sm rotate-3">
+              <Music className="w-5 h-5 -rotate-3" />
+            </div>
+            <h2 className="text-xl font-bold font-display text-primary">Farrão</h2>
+          </div>
+          <div className="hidden md:flex flex-col">
+            <h2 className="text-lg font-bold font-display text-foreground/80">
+              Festa da Família 2024 🎸
             </h2>
           </div>
           <div className="flex items-center space-x-4">
             {user.isGovernance && (
               <Badge
                 variant="secondary"
-                className="hidden sm:flex bg-amber-100 text-amber-800 hover:bg-amber-200 border-transparent"
+                className="hidden sm:flex bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200 shadow-sm"
               >
                 <ShieldAlert className="w-3 h-3 mr-1" />
                 Governança
               </Badge>
             )}
-            <Button variant="ghost" size="icon" className="relative text-slate-600">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative text-foreground/60 hover:text-primary hover:bg-orange-100/50"
+            >
               <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-secondary rounded-full"></span>
+              <span className="absolute top-2 right-2 w-2 h-2 bg-secondary rounded-full border-2 border-white"></span>
             </Button>
             <Link to="/profile">
-              <Avatar className="w-9 h-9 border border-slate-200 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+              <Avatar className="w-10 h-10 border-2 border-white shadow-md cursor-pointer hover:scale-105 transition-transform">
                 <AvatarImage
                   src={
                     user.photoUrl || `https://img.usecurling.com/ppl/thumbnail?seed=${user.name}`
                   }
                 />
-                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                  {user.name.charAt(0)}
+                </AvatarFallback>
               </Avatar>
             </Link>
           </div>
@@ -93,7 +111,7 @@ export default function Layout() {
         </main>
 
         {/* Mobile Bottom Nav */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 flex justify-around items-center px-2 z-30 pb-safe shadow-[0_-2px_15px_-3px_rgba(0,0,0,0.05)]">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-xl border-t border-amber-200/50 flex justify-around items-center px-2 z-30 pb-safe shadow-[0_-5px_15px_-3px_rgba(255,102,0,0.05)]">
           {NAV_ITEMS.map((item) => {
             const isActive = location.pathname === item.path
             return (
@@ -101,12 +119,15 @@ export default function Layout() {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  'flex flex-col items-center justify-center w-full h-full space-y-1',
-                  isActive ? 'text-primary' : 'text-slate-400',
+                  'flex flex-col items-center justify-center w-full h-full space-y-1 relative',
+                  isActive ? 'text-primary' : 'text-foreground/40',
                 )}
               >
-                <item.icon className={cn('w-5 h-5', isActive && 'fill-primary/20')} />
-                <span className="text-[10px] font-medium">{item.label}</span>
+                {isActive && (
+                  <span className="absolute -top-2 w-8 h-1 bg-primary rounded-full"></span>
+                )}
+                <item.icon className={cn('w-5 h-5', isActive && 'fill-primary/10')} />
+                <span className="text-[10px] font-bold">{item.label}</span>
               </Link>
             )
           })}

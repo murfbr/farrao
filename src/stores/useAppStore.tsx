@@ -86,22 +86,22 @@ const defaultUser: UserProfile = {
 const mockGroups: Group[] = [
   {
     id: 'g1',
-    name: 'Comissão Organizadora',
-    description: 'Decisões financeiras e de governança geral.',
+    name: 'Comissão do Churras e Bebidas',
+    description: 'Decisões financeiras e compras de alto escalão da governança.',
     type: 'governance',
     memberIds: ['u1'],
   },
   {
     id: 'g2',
-    name: 'Equipe de Logística',
-    description: 'Organização de compras, transporte e limpeza.',
+    name: 'Bonde da Limpeza',
+    description: 'Ajudar a manter a casa habitável e recolher as latas.',
     type: 'general',
     memberIds: [],
   },
   {
     id: 'g3',
-    name: 'Comissão de Entretenimento',
-    description: 'Jogos, som e atividades gerais.',
+    name: 'Ministério do Som',
+    description: 'Cuidar das caixas JBL, cabos, violão e setlists.',
     type: 'general',
     memberIds: ['u1'],
   },
@@ -111,7 +111,7 @@ const mockTasks: Task[] = [
   {
     id: 't1',
     groupId: 'g1',
-    title: 'Fechar contrato da chácara',
+    title: 'Pagar sinal da chácara pro dono',
     status: 'done',
     assignee: 'João',
     priority: 'Alta',
@@ -119,7 +119,7 @@ const mockTasks: Task[] = [
   {
     id: 't2',
     groupId: 'g2',
-    title: 'Comprar carnes pro churrasco',
+    title: 'Comprar sacos de lixo de 100L',
     status: 'doing',
     assignee: 'Maria',
     priority: 'Média',
@@ -127,7 +127,7 @@ const mockTasks: Task[] = [
   {
     id: 't3',
     groupId: 'g3',
-    title: 'Montar playlist do evento',
+    title: 'Fazer playlist pro churrasco de sábado',
     status: 'todo',
     assignee: 'Ana',
     priority: 'Baixa',
@@ -137,26 +137,26 @@ const mockTasks: Task[] = [
 const mockPolls: Poll[] = [
   {
     id: 'p1',
-    title: 'Destino do Jantar de Sábado',
-    description: 'Onde vamos comer todos juntos na nossa última noite?',
+    title: 'O que vai ter no Jantar de Sábado?',
+    description: 'Vamos fechar o cardápio da nossa última noite na chácara!',
     deadline: new Date(Date.now() + 86400000 * 5).toISOString().slice(0, 16),
     status: 'open',
     options: [
-      { id: 'o1', text: 'Pizzaria do Bairro', votes: 4 },
-      { id: 'o2', text: 'Restaurante Japonês', votes: 7 },
-      { id: 'o3', text: 'Churrasco na Casa', votes: 12 },
+      { id: 'o1', text: 'Rodízio de Pizza', votes: 4 },
+      { id: 'o2', text: 'Noite do Hamburguer', votes: 7 },
+      { id: 'o3', text: 'Sobras do Churrasco (Economia)', votes: 12 },
     ],
   },
   {
     id: 'p2',
-    title: 'Atividade da Tarde Livre',
-    description: 'O que faremos na tarde de sexta?',
+    title: 'Gincana da Tarde de Sexta',
+    description: 'Pra animar as crianças e os adultos.',
     deadline: new Date(Date.now() - 86400000).toISOString().slice(0, 16),
     status: 'closed',
     votedOptionId: 'o5',
     options: [
-      { id: 'o4', text: 'Piscina / Descanso', votes: 15 },
-      { id: 'o5', text: 'Trilha Ecológica', votes: 5 },
+      { id: 'o4', text: 'Torneio de Truco', votes: 15 },
+      { id: 'o5', text: 'Futebol de Sabão', votes: 5 },
     ],
   },
 ]

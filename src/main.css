@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Quicksand:wght@500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,54 +6,54 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%; /* #f8fafc */
-    --foreground: 222.2 84% 4.9%;
+    --background: 45 100% 96%; /* #FEF3C7 warm off-white */
+    --foreground: 20 50% 15%; /* dark brown/orange */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 20 50% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%; /* #2563eb */
-    --primary-foreground: 210 40% 98%;
-    --secondary: 24.6 95% 53.1%; /* #f97316 */
-    --secondary-foreground: 210 40% 98%;
-    --muted: 214.3 31.8% 91.4%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 214.3 31.8% 91.4%;
-    --accent-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 20 50% 15%;
+    --primary: 24 100% 50%; /* #FF6600 vibrant orange */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 142 71% 45%; /* #22C55E vibrant green */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 45 40% 90%;
+    --muted-foreground: 20 20% 40%;
+    --accent: 45 93% 47%; /* Yellow */
+    --accent-foreground: 20 50% 15%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.75rem;
+    --destructive-foreground: 0 0% 100%;
+    --border: 45 30% 85%;
+    --input: 45 30% 85%;
+    --ring: 24 100% 50%;
+    --radius: 1rem;
 
-    --chart-1: 221 83% 53%;
-    --chart-2: 24 95% 53%;
-    --chart-3: 160 84% 39%;
-    --chart-4: 38 92% 50%;
-    --chart-5: 0 84% 60%;
+    --chart-1: 24 100% 50%; /* Orange */
+    --chart-2: 142 71% 45%; /* Green */
+    --chart-3: 45 93% 47%; /* Yellow */
+    --chart-4: 330 80% 50%; /* Pinkish */
+    --chart-5: 190 80% 50%; /* Cyan */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 24.6 95% 53.1%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 221.2 83.2% 53.3%;
+    --background: 20 50% 10%;
+    --foreground: 45 100% 96%;
+    --card: 20 40% 15%;
+    --card-foreground: 45 100% 96%;
+    --popover: 20 40% 15%;
+    --popover-foreground: 45 100% 96%;
+    --primary: 24 100% 60%;
+    --primary-foreground: 20 50% 10%;
+    --secondary: 142 71% 50%;
+    --secondary-foreground: 20 50% 10%;
+    --muted: 20 30% 20%;
+    --muted-foreground: 45 40% 70%;
+    --accent: 45 93% 55%;
+    --accent-foreground: 20 50% 10%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 45 100% 96%;
+    --border: 20 30% 25%;
+    --input: 20 30% 25%;
+    --ring: 24 100% 60%;
   }
 
   * {
@@ -61,17 +61,27 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    background-image: radial-gradient(circle at top right, #fef3c7 0%, #fffbeb 100%);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display;
   }
 }
 
 @layer utilities {
   .animate-fade-in {
-    animation: fade-in 0.3s ease-out;
+    animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
   @keyframes fade-in {
     from {
       opacity: 0;
-      transform: translateY(5px);
+      transform: translateY(10px);
     }
     to {
       opacity: 1;

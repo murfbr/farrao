@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Clock } from 'lucide-react'
+import { Plus, Flame, Music, Beer } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -46,16 +46,16 @@ export default function Voting() {
 
     votePoll(pollId, optionId)
     toast({
-      title: 'Voto registrado!',
-      description: 'Obrigado por participar da decisão.',
+      title: 'Voto na Urna! 🎸',
+      description: 'Obrigado por ajudar a decidir a nossa festa.',
     })
   }
 
   const handleCreatePoll = () => {
     if (!newPollTitle || !newPollDeadline || newPollOptions.filter((o) => o.trim()).length < 2) {
       toast({
-        title: 'Erro',
-        description: 'Preencha todos os campos obrigatórios e pelo menos 2 opções.',
+        title: 'Calma lá!',
+        description: 'Preencha o título, o prazo e pelo menos 2 opções de resposta.',
         variant: 'destructive',
       })
       return
@@ -75,8 +75,8 @@ export default function Voting() {
     })
 
     toast({
-      title: 'Votação Criada!',
-      description: 'A nova votação já está disponível para o grupo.',
+      title: 'Votação Lançada! 📢',
+      description: 'A galera já pode votar.',
     })
     setNewPollTitle('')
     setNewPollDesc('')
@@ -85,52 +85,62 @@ export default function Voting() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 animate-fade-in max-w-3xl mx-auto">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Votações</h1>
-          <p className="text-slate-500 text-sm">Painel de transparência e decisões do grupo.</p>
+          <h1 className="text-3xl font-black font-display text-foreground flex items-center">
+            <Music className="w-8 h-8 mr-3 text-primary" /> Votações do Farrão
+          </h1>
+          <p className="text-foreground/60 text-base mt-2 font-medium">
+            Deixe sua opinião nas decisões do evento. A voz do povo é a voz de Deus!
+          </p>
         </div>
 
         {user.isGovernance && (
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="shrink-0 shadow-sm transition-transform active:scale-95">
-                <Plus className="w-4 h-4 mr-2" /> Nova Votação
+              <Button className="shrink-0 shadow-lg shadow-primary/20 transition-transform hover:scale-105 active:scale-95 font-bold rounded-xl h-12 px-6 text-base">
+                <Plus className="w-5 h-5 mr-2" /> Criar Votação
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] border-amber-200">
               <DialogHeader>
-                <DialogTitle>Criar Nova Votação</DialogTitle>
+                <DialogTitle className="font-display font-black text-2xl">
+                  Lançar Pergunta
+                </DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 py-4">
+              <div className="space-y-5 py-4">
                 <div className="space-y-2">
-                  <Label>Título da Votação</Label>
+                  <Label className="font-bold">Qual é a boa?</Label>
                   <Input
                     value={newPollTitle}
                     onChange={(e) => setNewPollTitle(e.target.value)}
-                    placeholder="Ex: Qual dia faremos a feijoada?"
+                    placeholder="Ex: O que vamos beber no sábado?"
+                    className="bg-orange-50/30 border-amber-200 font-bold"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Descrição (Opcional)</Label>
+                  <Label className="font-bold">Detalhes (Opcional)</Label>
                   <Textarea
                     value={newPollDesc}
                     onChange={(e) => setNewPollDesc(e.target.value)}
-                    placeholder="Detalhes adicionais..."
-                    className="resize-none h-20"
+                    placeholder="Explique melhor as opções..."
+                    className="resize-none h-20 bg-orange-50/30 border-amber-200"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Prazo Final (Obrigatório)</Label>
+                  <Label className="font-bold flex items-center text-red-600">
+                    <Flame className="w-4 h-4 mr-1" /> Prazo Final (Obrigatório)
+                  </Label>
                   <Input
                     type="datetime-local"
                     value={newPollDeadline}
                     onChange={(e) => setNewPollDeadline(e.target.value)}
+                    className="border-red-200 focus-visible:ring-red-500 bg-white"
                   />
                 </div>
                 <div className="space-y-3">
-                  <Label>Opções de Voto</Label>
+                  <Label className="font-bold">Opções pro pessoal escolher</Label>
                   {newPollOptions.map((opt, i) => (
                     <Input
                       key={i}
@@ -141,24 +151,29 @@ export default function Voting() {
                         setNewPollOptions(newOpts)
                       }}
                       placeholder={`Opção ${i + 1}`}
+                      className="border-amber-200 bg-white"
                     />
                   ))}
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full border-dashed"
+                    className="w-full border-dashed border-primary/40 text-primary font-bold hover:bg-primary/5"
                     onClick={() => setNewPollOptions([...newPollOptions, ''])}
                   >
-                    + Adicionar Opção
+                    + Mais uma opção
                   </Button>
                 </div>
               </div>
               <DialogFooter>
                 <DialogClose asChild>
-                  <Button variant="ghost">Cancelar</Button>
+                  <Button variant="ghost" className="font-bold">
+                    Cancelar
+                  </Button>
                 </DialogClose>
                 <DialogClose asChild>
-                  <Button onClick={handleCreatePoll}>Publicar Votação</Button>
+                  <Button onClick={handleCreatePoll} className="font-bold shadow-md rounded-xl">
+                    Publicar
+                  </Button>
                 </DialogClose>
               </DialogFooter>
             </DialogContent>
@@ -177,7 +192,7 @@ export default function Voting() {
 
           const formattedDeadline = deadlineDate.toLocaleDateString('pt-BR', {
             day: '2-digit',
-            month: '2-digit',
+            month: 'long',
             hour: '2-digit',
             minute: '2-digit',
           })
@@ -186,60 +201,83 @@ export default function Voting() {
             <Card
               key={poll.id}
               className={cn(
-                'shadow-sm overflow-hidden transition-all',
-                isClosed ? 'border-slate-200 bg-slate-50/50' : 'border-primary/20',
+                'shadow-md overflow-hidden transition-all rounded-2xl border-2',
+                isClosed
+                  ? 'border-amber-100 bg-white/50 grayscale-[20%]'
+                  : 'border-primary/40 bg-white/90 backdrop-blur-sm',
               )}
             >
-              <CardHeader className="pb-4">
+              <CardHeader
+                className={cn(
+                  'pb-5',
+                  !isClosed && 'bg-gradient-to-r from-orange-50 to-amber-50/50',
+                )}
+              >
                 <div className="flex justify-between items-start gap-4">
-                  <div className="space-y-1.5">
-                    <CardTitle className="text-xl text-slate-800 leading-tight">
+                  <div className="space-y-2">
+                    <CardTitle className="text-2xl font-black font-display text-foreground leading-tight flex items-start">
                       {poll.title}
                     </CardTitle>
-                    {poll.description && <CardDescription>{poll.description}</CardDescription>}
-                    <div className="flex items-center text-xs font-medium text-slate-500 mt-2">
-                      <Clock className="w-3.5 h-3.5 mr-1.5" />
-                      Prazo: {formattedDeadline}
+                    {poll.description && (
+                      <CardDescription className="text-base font-medium">
+                        {poll.description}
+                      </CardDescription>
+                    )}
+                    <div
+                      className={cn(
+                        'flex items-center text-xs font-bold uppercase tracking-widest mt-3 px-3 py-1.5 rounded-lg w-fit',
+                        isPastDeadline ? 'bg-red-100 text-red-700' : 'bg-primary/10 text-primary',
+                      )}
+                    >
+                      <Flame className="w-4 h-4 mr-1.5" />
+                      Encerra em: {formattedDeadline}
                     </div>
                   </div>
                   <Badge
                     variant={isClosed ? 'secondary' : 'default'}
-                    className="shrink-0 shadow-sm"
+                    className={cn(
+                      'shrink-0 shadow-sm font-black uppercase tracking-wider',
+                      isClosed ? 'bg-foreground/10 text-foreground/60' : '',
+                    )}
                   >
-                    {isClosed ? 'Encerrado' : 'Aberto'}
+                    {isClosed ? 'Encerrada' : 'No Ar'}
                   </Badge>
                 </div>
               </CardHeader>
 
-              <CardContent>
+              <CardContent className="pt-6">
                 {!showResults ? (
                   <RadioGroup
                     value={selectedOptions[poll.id]}
                     onValueChange={(val) =>
                       setSelectedOptions((prev) => ({ ...prev, [poll.id]: val }))
                     }
-                    className="space-y-3"
+                    className="space-y-4"
                   >
                     {poll.options.map((option) => (
-                      <div
+                      <Label
                         key={option.id}
-                        className="flex items-center space-x-3 bg-white border border-slate-200 p-3 rounded-lg hover:border-primary/50 transition-colors cursor-pointer"
-                        onClick={() =>
-                          setSelectedOptions((prev) => ({ ...prev, [poll.id]: option.id }))
-                        }
+                        htmlFor={`opt-${poll.id}-${option.id}`}
+                        className={cn(
+                          'flex items-center space-x-4 bg-white border-2 p-4 rounded-xl transition-all cursor-pointer',
+                          selectedOptions[poll.id] === option.id
+                            ? 'border-primary bg-primary/5 shadow-sm scale-[1.02]'
+                            : 'border-amber-100 hover:border-primary/50 hover:bg-orange-50/30',
+                        )}
                       >
-                        <RadioGroupItem value={option.id} id={`opt-${option.id}`} />
-                        <Label
-                          htmlFor={`opt-${option.id}`}
-                          className="flex-1 cursor-pointer font-medium text-slate-700"
-                        >
+                        <RadioGroupItem
+                          value={option.id}
+                          id={`opt-${poll.id}-${option.id}`}
+                          className="w-5 h-5 text-primary border-primary"
+                        />
+                        <span className="flex-1 font-bold text-lg text-foreground">
                           {option.text}
-                        </Label>
-                      </div>
+                        </span>
+                      </Label>
                     ))}
                   </RadioGroup>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     {poll.options.map((option) => {
                       const percentage =
                         totalVotes === 0 ? 0 : Math.round((option.votes / totalVotes) * 100)
@@ -249,47 +287,52 @@ export default function Voting() {
                       const isMyVote = poll.votedOptionId === option.id
 
                       return (
-                        <div key={option.id} className="space-y-1.5">
-                          <div className="flex justify-between text-sm items-center">
+                        <div key={option.id} className="space-y-2">
+                          <div className="flex justify-between items-center">
                             <span
                               className={cn(
-                                'font-medium',
-                                isWinner ? 'text-primary font-bold' : 'text-slate-600',
+                                'text-lg font-bold flex items-center',
+                                isWinner ? 'text-primary' : 'text-foreground/70',
                               )}
                             >
-                              {option.text}{' '}
+                              {option.text}
+                              {isWinner && (
+                                <Beer className="w-5 h-5 ml-2 text-primary animate-bounce" />
+                              )}
                               {isMyVote && (
-                                <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded ml-2 uppercase font-bold tracking-wider">
+                                <span className="text-[10px] bg-secondary/20 text-secondary px-2 py-1 rounded-md ml-3 uppercase font-black tracking-widest border border-secondary/30">
                                   Seu voto
                                 </span>
                               )}
                             </span>
-                            <span className="text-slate-500 font-medium text-xs">
+                            <span className="font-black text-sm text-foreground/50 bg-foreground/5 px-2 py-1 rounded-md">
                               {percentage}% ({option.votes})
                             </span>
                           </div>
                           <Progress
                             value={percentage}
-                            className={cn('h-2.5 bg-slate-200', isWinner && '[&>div]:bg-primary')}
+                            className={cn('h-3 bg-amber-100', isWinner && '[&>div]:bg-primary')}
                           />
                         </div>
                       )
                     })}
-                    <div className="text-sm text-slate-400 text-right pt-3 border-t mt-4 font-medium">
-                      Total de {totalVotes} {totalVotes === 1 ? 'voto' : 'votos'}
+                    <div className="text-sm text-foreground/40 text-right pt-4 border-t border-amber-100 mt-6 font-bold uppercase tracking-widest">
+                      Total de {totalVotes}{' '}
+                      {totalVotes === 1 ? 'voto computado' : 'votos computados'}
                     </div>
                   </div>
                 )}
               </CardContent>
 
               {!showResults && (
-                <CardFooter className="bg-slate-50/50 pt-4 pb-4 border-t border-slate-100">
+                <CardFooter className="bg-orange-50/50 pt-5 pb-5 border-t border-amber-100">
                   <Button
-                    className="w-full transition-transform active:scale-95 shadow-sm"
+                    size="lg"
+                    className="w-full transition-transform hover:scale-[1.02] active:scale-95 shadow-md font-black text-lg rounded-xl"
                     disabled={!selectedOptions[poll.id]}
                     onClick={() => handleVote(poll.id)}
                   >
-                    Confirmar Voto
+                    Confirmar Escolha
                   </Button>
                 </CardFooter>
               )}
