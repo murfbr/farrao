@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Plus, ChevronRight, ChevronLeft } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Plus, ChevronRight, ChevronLeft, ArrowLeft, Users } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -38,22 +38,99 @@ const priorityColors: Record<string, string> = {
 }
 
 export default function Tasks() {
-  const { tasks, moveTask, addTask } = useAppStore()
+  const { user, groups, joinGroup, tasks, moveTask, addTask } = useAppStore()
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskPriority, setNewTaskPriority] = useState('Média')
 
+  const availableGroups = groups.filter((g) => g.type === 'general' || user.isGovernance)
+  const activeGroup = groups.find((g) => g.id === selectedGroupId)
+
   const handleAdd = () => {
-    if (!newTaskTitle.trim()) return
-    addTask(newTaskTitle, newTaskPriority)
+    if (!newTaskTitle.trim() || !selectedGroupId) return
+    addTask(selectedGroupId, newTaskTitle, newTaskPriority)
     setNewTaskTitle('')
   }
 
+  // 1. Group Selection View
+  if (!selectedGroupId) {
+    return (
+      <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-800">Grupos de Trabalho</h1>
+          <p className="text-slate-500 text-sm">
+            Selecione um grupo para visualizar e gerenciar as tarefas organizacionais.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {availableGroups.map((group) => {
+            const isMember = group.memberIds.includes(user.id)
+            return (
+              <Card
+                key={group.id}
+                className="shadow-sm hover:shadow-md transition-all border-slate-200 flex flex-col h-full"
+              >
+                <CardHeader className="flex-1">
+                  <div className="flex justify-between items-start mb-2">
+                    <CardTitle className="text-lg text-slate-800">{group.name}</CardTitle>
+                    {group.type === 'governance' && (
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                        Governança
+                      </Badge>
+                    )}
+                  </div>
+                  <CardDescription className="text-sm">{group.description}</CardDescription>
+                  <div className="mt-4 flex items-center text-xs text-slate-500 font-medium">
+                    <Users className="w-4 h-4 mr-1.5" />
+                    {group.memberIds.length} {group.memberIds.length === 1 ? 'membro' : 'membros'}
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <Button
+                    className="w-full shadow-sm"
+                    variant={isMember ? 'default' : 'outline'}
+                    onClick={() => {
+                      if (!isMember) joinGroup(group.id)
+                      setSelectedGroupId(group.id)
+                    }}
+                  >
+                    {isMember ? 'Acessar Quadro de Tarefas' : 'Participar do Grupo'}
+                  </Button>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  // 2. Kanban Board View
   return (
     <div className="space-y-6 animate-fade-in h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Grupos de Trabalho</h1>
-          <p className="text-slate-500 text-sm">Organize e divida as tarefas da viagem.</p>
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setSelectedGroupId(null)}
+            className="shrink-0 rounded-full w-8 h-8"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h1 className="text-xl font-bold text-slate-800">{activeGroup?.name}</h1>
+              {activeGroup?.type === 'governance' && (
+                <Badge variant="secondary" className="text-[10px] h-5">
+                  Governança
+                </Badge>
+              )}
+            </div>
+            <p className="text-slate-500 text-sm">Gerencie as tarefas deste grupo.</p>
+          </div>
         </div>
 
         <Dialog>
@@ -105,7 +182,7 @@ export default function Tasks() {
       {/* Kanban Board */}
       <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-[500px]">
         {COLUMNS.map((col) => {
-          const colTasks = tasks.filter((t) => t.status === col.id)
+          const colTasks = tasks.filter((t) => t.groupId === selectedGroupId && t.status === col.id)
           return (
             <div
               key={col.id}
@@ -137,7 +214,7 @@ export default function Tasks() {
                         <Badge
                           variant="outline"
                           className={cn(
-                            'text-[10px] uppercase font-bold border-none',
+                            'text-[10px] uppercase font-bold border-none shrink-0',
                             priorityColors[task.priority],
                           )}
                         >
@@ -166,7 +243,7 @@ export default function Tasks() {
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="w-6 h-6 h-8 w-8 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full"
+                              className="w-8 h-8 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full"
                               onClick={() =>
                                 moveTask(task.id, col.id === 'done' ? 'doing' : 'todo')
                               }
@@ -178,7 +255,7 @@ export default function Tasks() {
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="w-6 h-6 h-8 w-8 bg-slate-100 hover:bg-primary hover:text-white text-slate-600 rounded-full transition-colors"
+                              className="w-8 h-8 bg-slate-100 hover:bg-primary hover:text-white text-slate-600 rounded-full transition-colors"
                               onClick={() =>
                                 moveTask(task.id, col.id === 'todo' ? 'doing' : 'done')
                               }

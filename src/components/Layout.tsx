@@ -1,8 +1,9 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { Home, CheckSquare, Vote, DollarSign, User, Bell } from 'lucide-react'
+import { Home, CheckSquare, Vote, DollarSign, User, Bell, ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import useAppStore from '@/stores/useAppStore'
 
 const NAV_ITEMS = [
@@ -20,7 +21,7 @@ export default function Layout() {
   return (
     <div className="flex h-screen bg-background overflow-hidden text-slate-700">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 z-10">
+      <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 z-10 shadow-[2px_0_15px_-3px_rgba(0,0,0,0.05)]">
         <div className="p-6">
           <h1 className="text-2xl font-bold text-primary tracking-tight">AmigoTrip</h1>
           <p className="text-xs text-slate-500 mt-1">Organizador Anual</p>
@@ -58,13 +59,26 @@ export default function Layout() {
             </h2>
           </div>
           <div className="flex items-center space-x-4">
+            {user.isGovernance && (
+              <Badge
+                variant="secondary"
+                className="hidden sm:flex bg-amber-100 text-amber-800 hover:bg-amber-200 border-transparent"
+              >
+                <ShieldAlert className="w-3 h-3 mr-1" />
+                Governança
+              </Badge>
+            )}
             <Button variant="ghost" size="icon" className="relative text-slate-600">
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-secondary rounded-full"></span>
             </Button>
             <Link to="/profile">
               <Avatar className="w-9 h-9 border border-slate-200 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
-                <AvatarImage src={`https://img.usecurling.com/ppl/thumbnail?seed=${user.name}`} />
+                <AvatarImage
+                  src={
+                    user.photoUrl || `https://img.usecurling.com/ppl/thumbnail?seed=${user.name}`
+                  }
+                />
                 <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
               </Avatar>
             </Link>
@@ -79,7 +93,7 @@ export default function Layout() {
         </main>
 
         {/* Mobile Bottom Nav */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 flex justify-around items-center px-2 z-30 pb-safe">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 flex justify-around items-center px-2 z-30 pb-safe shadow-[0_-2px_15px_-3px_rgba(0,0,0,0.05)]">
           {NAV_ITEMS.map((item) => {
             const isActive = location.pathname === item.path
             return (
