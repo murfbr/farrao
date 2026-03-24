@@ -150,11 +150,13 @@ type AppState = {
   venuePhotos: string[]
 
   dailyMenus: DailyMenu[]
+  updateDailyMenus: (menus: DailyMenu[]) => void
   shoppingItems: ShoppingItem[]
   addShoppingItem: (item: Omit<ShoppingItem, 'id'>) => void
   updateShoppingItem: (id: string, updates: Partial<ShoppingItem>) => void
   deleteShoppingItem: (id: string) => void
   importShoppingItems: (items: Omit<ShoppingItem, 'id'>[]) => void
+  bulkAssignShoppingItems: (itemIds: string[], assigneeId: string | null) => void
 }
 
 const defaultUser: UserProfile = {
@@ -329,7 +331,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [polls, setPolls] = useState<Poll[]>(mockPolls)
   const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements)
 
-  const [dailyMenus] = useState<DailyMenu[]>(mockDailyMenus)
+  const [dailyMenus, setDailyMenus] = useState<DailyMenu[]>(mockDailyMenus)
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>(mockShoppingItems)
 
   const [eventDetails, setEventDetails] = useState<EventDetails>({
@@ -454,6 +456,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setEventDetails((prev) => ({ ...prev, ...details }))
   }
 
+  const updateDailyMenus = (menus: DailyMenu[]) => {
+    setDailyMenus(menus)
+  }
+
   const addShoppingItem = (item: Omit<ShoppingItem, 'id'>) => {
     setShoppingItems((prev) => [...prev, { ...item, id: Math.random().toString(36).substr(2, 9) }])
   }
@@ -469,6 +475,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const importShoppingItems = (items: Omit<ShoppingItem, 'id'>[]) => {
     const newItems = items.map((i) => ({ ...i, id: Math.random().toString(36).substr(2, 9) }))
     setShoppingItems((prev) => [...newItems, ...prev])
+  }
+
+  const bulkAssignShoppingItems = (itemIds: string[], assigneeId: string | null) => {
+    setShoppingItems((prev) =>
+      prev.map((item) =>
+        itemIds.includes(item.id) ? { ...item, assignedToId: assigneeId } : item,
+      ),
+    )
   }
 
   const totalGuests = useMemo(
@@ -506,11 +520,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateEventDetails,
         venuePhotos,
         dailyMenus,
+        updateDailyMenus,
         shoppingItems,
         addShoppingItem,
         updateShoppingItem,
         deleteShoppingItem,
         importShoppingItems,
+        bulkAssignShoppingItems,
       }}
     >
       {children}
