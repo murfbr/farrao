@@ -83,6 +83,14 @@ export type Announcement = {
   archived: boolean
 }
 
+export type EventDetails = {
+  title: string
+  message: string
+  date: string
+  location: string
+  targetDate: string
+}
+
 type AppState = {
   user: UserProfile
   setUser: (user: UserProfile) => void
@@ -110,6 +118,10 @@ type AppState = {
   announcements: Announcement[]
   addAnnouncement: (ann: Omit<Announcement, 'id' | 'date' | 'archived'>) => void
   archiveAnnouncement: (id: string) => void
+
+  eventDetails: EventDetails
+  updateEventDetails: (details: Partial<EventDetails>) => void
+  venuePhotos: string[]
 }
 
 const defaultUser: UserProfile = {
@@ -220,6 +232,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [polls, setPolls] = useState<Poll[]>(mockPolls)
   const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements)
 
+  const [eventDetails, setEventDetails] = useState<EventDetails>({
+    title: 'Farrão 2024',
+    message: 'A festa mais esperada da família. Muita música, resenha e alegria!',
+    date: '20 a 24 de Dezembro',
+    location: 'Ibiúna, SP',
+    targetDate: '2024-12-20T00:00:00',
+  })
+
+  const [venuePhotos] = useState<string[]>([
+    'https://img.usecurling.com/p/800/800?q=country%20house&seed=1',
+    'https://img.usecurling.com/p/800/800?q=swimming%20pool&seed=2',
+    'https://img.usecurling.com/p/800/800?q=barbecue%20grill&seed=3',
+    'https://img.usecurling.com/p/800/800?q=garden&seed=4',
+  ])
+
   const setUser = (newUser: UserProfile) => {
     setUserState(newUser)
     setParticipants((prev) =>
@@ -323,6 +350,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     )
   }
 
+  const updateEventDetails = (details: Partial<EventDetails>) => {
+    setEventDetails((prev) => ({ ...prev, ...details }))
+  }
+
   const totalGuests = useMemo(
     () => participants.reduce((acc, p) => acc + p.members.length, 0),
     [participants],
@@ -354,6 +385,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         announcements,
         addAnnouncement,
         archiveAnnouncement,
+        eventDetails,
+        updateEventDetails,
+        venuePhotos,
       }}
     >
       {children}

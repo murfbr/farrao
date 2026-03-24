@@ -12,6 +12,7 @@ import {
   Archive,
   MessageSquarePlus,
   CheckCircle2,
+  Pencil,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -50,6 +51,9 @@ export default function Index() {
     announcements,
     addAnnouncement,
     archiveAnnouncement,
+    eventDetails,
+    updateEventDetails,
+    venuePhotos,
   } = useAppStore()
   const { toast } = useToast()
 
@@ -57,6 +61,9 @@ export default function Index() {
   const [content, setContent] = useState('')
   const [pinned, setPinned] = useState(false)
   const [openAdd, setOpenAdd] = useState(false)
+
+  const [isEditEventOpen, setIsEditEventOpen] = useState(false)
+  const [editForm, setEditForm] = useState(eventDetails)
 
   const activeAnnouncements = announcements
     .filter((a) => !a.archived)
@@ -88,7 +95,18 @@ export default function Index() {
     })
   }
 
-  const targetDate = new Date('2024-12-20T00:00:00')
+  const handleOpenEdit = () => {
+    setEditForm(eventDetails)
+    setIsEditEventOpen(true)
+  }
+
+  const handleSaveEvent = () => {
+    updateEventDetails(editForm)
+    setIsEditEventOpen(false)
+    toast({ title: 'Informações do evento atualizadas! ✅' })
+  }
+
+  const targetDate = new Date(eventDetails.targetDate)
   const today = new Date()
   const diffDays = Math.ceil(
     Math.max(targetDate.getTime() - today.getTime(), 0) / (1000 * 60 * 60 * 24),
@@ -98,7 +116,64 @@ export default function Index() {
   const confirmedPeople = confirmedParticipants.reduce((acc, p) => acc + p.members.length, 0)
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in pb-12">
+      {/* Event Edit Modal */}
+      <Dialog open={isEditEventOpen} onOpenChange={setIsEditEventOpen}>
+        <DialogContent className="sm:max-w-[425px] border-amber-200">
+          <DialogHeader>
+            <DialogTitle className="font-display font-black text-2xl">
+              Editar Informações
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="font-bold">Título do Evento</Label>
+              <Input
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                className="bg-orange-50/30 border-amber-200 font-bold"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold">Mensagem Principal</Label>
+              <Textarea
+                value={editForm.message}
+                onChange={(e) => setEditForm({ ...editForm, message: e.target.value })}
+                className="h-24 bg-orange-50/30 border-amber-200 resize-none font-medium"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold">Data do Evento</Label>
+              <Input
+                value={editForm.date}
+                onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                className="bg-orange-50/30 border-amber-200 font-medium"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold">Local</Label>
+              <Input
+                value={editForm.location}
+                onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                className="bg-orange-50/30 border-amber-200 font-medium"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditEventOpen(false)}
+              className="rounded-xl"
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveEvent} className="font-bold rounded-xl shadow-md">
+              Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {!user.hasConfirmed && (
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-400 to-teal-500 text-white p-6 md:p-8 shadow-xl shadow-emerald-500/20 flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
           <div className="flex items-center gap-4 relative z-10">
@@ -133,30 +208,44 @@ export default function Index() {
         </div>
 
         <div className="relative z-10 flex flex-col space-y-6">
-          <Badge className="w-fit bg-white/20 hover:bg-white/30 text-white border-none shadow-sm backdrop-blur-sm text-sm py-1 px-3">
-            Contagem Regressiva
-          </Badge>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <Badge className="w-fit bg-white/20 hover:bg-white/30 text-white border-none shadow-sm backdrop-blur-sm text-sm py-1 px-3">
+              Contagem Regressiva
+            </Badge>
+            {user.isGovernance && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOpenEdit}
+                className="w-fit bg-white/10 text-white hover:bg-white/20 hover:text-white border-white/20 backdrop-blur-md font-bold rounded-xl h-9"
+              >
+                <Pencil className="w-4 h-4 mr-2" />
+                Editar Informações
+              </Button>
+            )}
+          </div>
+
           <div className="space-y-2">
             <h1 className="text-4xl md:text-6xl font-black font-display tracking-tight drop-shadow-sm">
-              Farrão 2024
+              {eventDetails.title}
             </h1>
             <p className="text-xl md:text-2xl font-medium text-white/90 drop-shadow-sm max-w-xl">
-              A festa mais esperada da família. Muita música, resenha e alegria!
+              {eventDetails.message}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row sm:space-x-6 space-y-3 sm:space-y-0 text-white/90 font-semibold bg-black/10 w-fit p-4 rounded-2xl backdrop-blur-md">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-white/20 rounded-lg">
+              <div className="p-2 bg-white/20 rounded-lg shrink-0">
                 <Calendar className="w-5 h-5 text-white" />
               </div>
-              <span>20 a 24 de Dezembro</span>
+              <span>{eventDetails.date}</span>
             </div>
             <div className="hidden sm:block w-px bg-white/20" />
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-white/20 rounded-lg">
+              <div className="p-2 bg-white/20 rounded-lg shrink-0">
                 <MapPin className="w-5 h-5 text-white" />
               </div>
-              <span>Ibiúna, SP</span>
+              <span>{eventDetails.location}</span>
             </div>
           </div>
         </div>
@@ -482,6 +571,27 @@ export default function Index() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      <div className="mt-12 space-y-5 border-t border-amber-100 pt-8">
+        <div className="flex items-center justify-between">
+          <h3 className="text-2xl font-black font-display text-foreground">Galeria do Local</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {venuePhotos.map((photo, i) => (
+            <div
+              key={i}
+              className="aspect-square rounded-2xl overflow-hidden shadow-sm border border-amber-100 group cursor-pointer relative bg-orange-50/50"
+            >
+              <img
+                src={photo}
+                alt={`Foto do local ${i + 1}`}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+            </div>
+          ))}
         </div>
       </div>
     </div>
