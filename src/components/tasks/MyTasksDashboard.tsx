@@ -17,7 +17,7 @@ export default function MyTasksDashboard({ onTaskClick }: { onTaskClick: (task: 
           <CardContent className="p-8 text-center flex flex-col items-center justify-center">
             <CheckSquare className="w-8 h-8 text-foreground/30 mb-3" />
             <p className="text-foreground/60 font-medium">
-              Você ainda não tem missões. Que tal entrar em um bonde e puxar uma tarefa?
+              Você ainda não tem missões. Que tal entrar em uma galera e puxar uma tarefa?
             </p>
           </CardContent>
         </Card>

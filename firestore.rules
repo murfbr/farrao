@@ -1,0 +1,100 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Verifica se o request tem token válido do Google
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // SUPREMO: Verifica se o email autenticado está na coleção raiz de superadmins
+    function isSuperAdmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/superadmins/$(request.auth.token.email));
+    }
+
+    // ANTI-VAZAMENTO: Verifica se o email está na lista de convidados permitidos
+    function isAllowed() {
+      return isSuperAdmin() || 
+             (isAuthenticated() && exists(/databases/$(database)/documents/allowed_emails/$(request.auth.token.email)));
+    }
+
+    // Regras de posse baseadas no usuário permitido
+    function isOwner(userId) {
+      return isAllowed() && request.auth.uid == userId;
+    }
+
+    // Checa governança local do evento (Superadmin sempre tem poder de governança)
+    function isGovernance(eventId) {
+      return isSuperAdmin() || 
+             (isAllowed() && get(/databases/$(database)/documents/events/$(eventId)/participants/$(request.auth.uid)).data.isGovernance == true);
+    }
+
+    // --- COLEÇÕES DE SEGURANÇA (RAIZ) ---
+    match /superadmins/{email} {
+      allow read, write: if isSuperAdmin(); // Apenas deuses criam outros deuses
+    }
+    match /allowed_emails/{email} {
+      allow read: if isAllowed(); // UI precisa ler para saber se bloqueia
+      // Organizadores (Governança) podem adicionar emails na lista para liberar tios e primos!
+      allow write: if isSuperAdmin() || (isAllowed() && isGovernance('farrao-2026'));
+    }
+
+    // --- Contas Globais ---
+    match /users/{userId} {
+      allow read: if isAllowed();
+      allow write: if isSuperAdmin() || isOwner(userId);
+    }
+
+    // --- Isolamento por Evento ---
+    match /events/{eventId} {
+      
+      // Apenas convidados permitidos (allowlist) leem a festa
+      allow read: if isAllowed();
+      allow update: if isGovernance(eventId); 
+      allow delete: if isSuperAdmin(); // O botão do juízo final é só do Superadmin
+      allow create: if isGovernance(eventId); 
+
+      // 1. Inscrições e Pessoas Físicas
+      match /participants/{userId} {
+        allow read: if isAllowed();
+        allow write: if isGovernance(eventId) || isOwner(userId);
+      }
+
+      // 2. Grupos de Trabalho
+      match /groups/{groupId} {
+        allow read: if isAllowed();
+        allow write: if isAllowed(); 
+      }
+
+      // 3. Tarefas
+      match /tasks/{taskId} {
+        allow read: if isAllowed();
+        // Todos os permitidos podem pegar ou delegar tarefas
+        allow write: if isAllowed();
+      }
+
+      // 4. Enquetes (Polls)
+      match /polls/{pollId} {
+        allow read: if isAllowed();
+        allow create, delete: if isGovernance(eventId);
+        allow update: if isAllowed(); // Votar
+      }
+
+      // 5. Itens de Compra
+      match /shopping_items/{itemId} {
+        allow read, write: if isAllowed();
+      }
+
+      // 6. Avisos e Cardápio (Exclusivos da Governança)
+      match /announcements/{annId} {
+        allow read: if isAllowed();
+        allow write: if isGovernance(eventId);
+      }
+      match /menus/{menuId} {
+        allow read: if isAllowed();
+        allow write: if isGovernance(eventId);
+      }
+    }
+  }
+}

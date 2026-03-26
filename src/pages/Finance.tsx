@@ -1,4 +1,5 @@
-import { useMemo, useRef } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
+import { isBefore, parseISO, startOfDay } from 'date-fns'
 import {
   CheckCircle2,
   Clock,
@@ -10,6 +11,10 @@ import {
   Beer,
   Settings,
   Users,
+  Calendar,
+  Layers,
+  Plus,
+  Trash2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
@@ -21,6 +26,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,17 +40,28 @@ import { useToast } from '@/hooks/use-toast'
 import useAppStore, { ParticipantRecord, FinanceStatus } from '@/stores/useAppStore'
 import { cn } from '@/lib/utils'
 
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case 'paid':
-      return <CheckCircle2 className="w-6 h-6 text-green-500 mx-auto drop-shadow-sm" />
-    case 'pending':
-      return <Clock className="w-6 h-6 text-amber-400 mx-auto opacity-50" />
-    case 'late':
-      return <XCircle className="w-6 h-6 text-red-500 mx-auto drop-shadow-sm" />
-    default:
-      return null
+const getStatusIcon = (status: string, dueDate?: string) => {
+  const isLate = status === 'pending' && dueDate && isBefore(parseISO(dueDate), startOfDay(new Date()))
+
+  if (status === 'paid') {
+    return (
+      <span title="Pago">
+        <CheckCircle2 className="w-6 h-6 text-green-500 mx-auto drop-shadow-sm" />
+      </span>
+    )
   }
+  if (isLate || status === 'late') {
+    return (
+      <span title="Atrasado">
+        <XCircle className="w-6 h-6 text-red-500 mx-auto drop-shadow-sm" />
+      </span>
+    )
+  }
+  return (
+    <span title="Pendente">
+      <Clock className="w-6 h-6 text-amber-400 mx-auto opacity-50" />
+    </span>
+  )
 }
 
 export default function Finance() {
@@ -50,6 +73,8 @@ export default function Finance() {
     setPricingTiers,
     beverageTotal,
     setBeverageTotal,
+    eventDetails,
+    updateEventDetails,
   } = useAppStore()
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -93,13 +118,19 @@ export default function Finance() {
   const myBeverageFee = myParticipant ? calculateBeverageFee(myParticipant) : 0
 
   const handleExportCSV = () => {
-    const header =
-      'Família,Parc 1,Parc 2,Parc 3,Status Bebidas,Qtd Membros,Custo Base,Custo Bebidas,Total\n'
+    const installmentHeaders = eventDetails.installments.map((inst) => inst.label).join(',')
+    const header = `Família,${installmentHeaders},Status Bebidas,Qtd Membros,Custo Base,Custo Bebidas,Total\n`
     const rows = participants
-      .map(
-        (p) =>
-          `${p.name},${p.p1},${p.p2},${p.p3},${p.beverageStatus},${p.members.length},${calculateBaseFee(p)},${calculateBeverageFee(p).toFixed(2)},${(calculateBaseFee(p) + calculateBeverageFee(p)).toFixed(2)}`,
-      )
+      .map((p) => {
+        const installmentStatuses = eventDetails.installments
+          .map((inst) => p.payments[inst.id] || 'pending')
+          .join(',')
+        return `${p.name},${installmentStatuses},${p.beverageStatus},${p.members.length},${calculateBaseFee(
+          p,
+        )},${calculateBeverageFee(p).toFixed(2)},${(
+          calculateBaseFee(p) + calculateBeverageFee(p)
+        ).toFixed(2)}`
+      })
       .join('\n')
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
@@ -120,13 +151,18 @@ export default function Finance() {
     }
   }
 
-  const toggleStatus = (
-    id: string,
-    field: 'p1' | 'p2' | 'p3' | 'beverageStatus',
-    current: string,
-  ) => {
+  const toggleStatus = (id: string, installmentId: string, current: string) => {
+    const p = participants.find((x) => x.id === id)
+    if (!p) return
     const nextStatus = current === 'paid' ? 'pending' : current === 'pending' ? 'late' : 'paid'
-    updateParticipant(id, { [field]: nextStatus as FinanceStatus })
+    updateParticipant(id, {
+      payments: { ...p.payments, [installmentId]: nextStatus as FinanceStatus },
+    })
+  }
+
+  const toggleBeverageStatus = (id: string, current: string) => {
+    const nextStatus = current === 'paid' ? 'pending' : current === 'pending' ? 'late' : 'paid'
+    updateParticipant(id, { beverageStatus: nextStatus as FinanceStatus })
   }
 
   const CSVButtons = () => (
@@ -190,7 +226,7 @@ export default function Finance() {
                   Total Previsto
                 </p>
                 <p className="text-3xl font-black font-display text-primary text-center">
-                  R${' '}
+                  R$ {' '}
                   {(myBaseFee + myBeverageFee).toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
                   })}
@@ -215,34 +251,35 @@ export default function Finance() {
               <TableHeader className="bg-white">
                 <TableRow className="border-amber-100">
                   <TableHead className="w-[180px] font-bold text-foreground">Família</TableHead>
-                  <TableHead className="text-center font-bold text-foreground">
-                    Parc. 1 (Out)
-                  </TableHead>
-                  <TableHead className="text-center font-bold text-foreground">
-                    Parc. 2 (Nov)
-                  </TableHead>
-                  <TableHead className="text-center font-bold text-foreground">
-                    Parc. 3 (Dez)
-                  </TableHead>
+                  {eventDetails.installments.map((inst) => (
+                    <TableHead key={inst.id} className="text-center font-bold text-foreground min-w-[100px]">
+                      {inst.label}
+                      <div className="text-[10px] opacity-50 font-normal">{inst.dueDate}</div>
+                    </TableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participants.map((p, i) => (
-                  <TableRow
-                    key={p.id}
-                    className={cn(
-                      'border-amber-50 transition-colors',
-                      p.id === user.id && 'bg-primary/5 hover:bg-primary/10',
-                    )}
-                  >
-                    <TableCell className="font-bold text-foreground text-base py-4">
-                      {p.name}
-                    </TableCell>
-                    <TableCell>{getStatusIcon(p.p1)}</TableCell>
-                    <TableCell>{getStatusIcon(p.p2)}</TableCell>
-                    <TableCell>{getStatusIcon(p.p3)}</TableCell>
-                  </TableRow>
-                ))}
+                {participants.map((p, i) => {
+                  return (
+                    <TableRow
+                      key={p.id}
+                      className={cn(
+                        'border-amber-50 transition-colors',
+                        p.id === user.id && 'bg-primary/5 hover:bg-primary/10',
+                      )}
+                    >
+                      <TableCell className="font-bold text-foreground text-base py-4">
+                        {p.name}
+                      </TableCell>
+                      {eventDetails.installments.map((inst) => (
+                        <TableCell key={inst.id}>
+                          {getStatusIcon(p.payments[inst.id] || 'pending', inst.dueDate)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           </CardContent>
@@ -274,59 +311,134 @@ export default function Finance() {
         </div>
       </div>
 
-      <Card className="shadow-md border-amber-200 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden mb-6">
-        <CardHeader className="bg-orange-50/50 border-b border-amber-100">
-          <CardTitle className="font-display font-black text-xl text-foreground flex items-center">
-            <Settings className="w-5 h-5 text-primary mr-2" />
-            Motor de Preços Base
-          </CardTitle>
-          <CardDescription>Defina o valor da hospedagem por faixa etária.</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6 grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="space-y-2">
-            <Label className="font-bold">Adulto</Label>
-            <Input
-              type="number"
-              value={pricingTiers.adults}
-              onChange={(e) => setPricingTiers({ ...pricingTiers, adults: Number(e.target.value) })}
-              className="font-bold border-amber-200"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="font-bold">Crianças &lt; 10</Label>
-            <Input
-              type="number"
-              value={pricingTiers.childrenUnder10}
-              onChange={(e) =>
-                setPricingTiers({ ...pricingTiers, childrenUnder10: Number(e.target.value) })
-              }
-              className="font-bold border-amber-200"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="font-bold">Crianças 11 a 16</Label>
-            <Input
-              type="number"
-              value={pricingTiers.children11to16}
-              onChange={(e) =>
-                setPricingTiers({ ...pricingTiers, children11to16: Number(e.target.value) })
-              }
-              className="font-bold border-amber-200"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="font-bold">Staff / Babá</Label>
-            <Input
-              type="number"
-              value={pricingTiers.nannies}
-              onChange={(e) =>
-                setPricingTiers({ ...pricingTiers, nannies: Number(e.target.value) })
-              }
-              className="font-bold border-amber-200"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <Card className="shadow-md border-amber-200 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
+          <CardHeader className="bg-orange-50/50 border-b border-amber-100">
+            <CardTitle className="font-display font-black text-xl text-foreground flex items-center">
+              <Settings className="w-5 h-5 text-primary mr-2" />
+              Motor de Preços Base
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="font-bold">Adulto</Label>
+              <Input
+                type="number"
+                value={pricingTiers.adults}
+                onChange={(e) => setPricingTiers({ ...pricingTiers, adults: Number(e.target.value) })}
+                className="font-bold border-amber-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold">Crianças &lt; 10</Label>
+              <Input
+                type="number"
+                value={pricingTiers.childrenUnder10}
+                onChange={(e) =>
+                  setPricingTiers({ ...pricingTiers, childrenUnder10: Number(e.target.value) })
+                }
+                className="font-bold border-amber-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold">Crianças 11 a 16</Label>
+              <Input
+                type="number"
+                value={pricingTiers.children11to16}
+                onChange={(e) =>
+                  setPricingTiers({ ...pricingTiers, children11to16: Number(e.target.value) })
+                }
+                className="font-bold border-amber-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold">Staff / Babá</Label>
+              <Input
+                type="number"
+                value={pricingTiers.nannies}
+                onChange={(e) =>
+                  setPricingTiers({ ...pricingTiers, nannies: Number(e.target.value) })
+                }
+                className="font-bold border-amber-200"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-md border-primary/20 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
+          <CardHeader className="bg-primary/5 border-b border-primary/10 flex flex-row items-center justify-between">
+            <CardTitle className="font-display font-black text-xl text-primary flex items-center">
+              <Calendar className="w-5 h-5 mr-2" />
+              Gestão de Parcelas
+            </CardTitle>
+            <Button
+              size="sm"
+              onClick={() => {
+                const nextId = String(eventDetails.installments.length + 1)
+                updateEventDetails({
+                  installments: [
+                    ...eventDetails.installments,
+                    { id: nextId, label: `Parcela ${nextId}`, dueDate: '' },
+                  ],
+                })
+              }}
+              className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl h-8"
+            >
+              <Plus className="w-4 h-4 mr-1" /> Adicionar
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+              {eventDetails.installments.map((inst, idx) => (
+                <div key={inst.id} className="flex items-center gap-3 p-3 bg-white border border-primary/10 rounded-xl shadow-sm group">
+                  <div className="bg-primary/10 w-8 h-8 rounded-lg flex items-center justify-center text-primary font-black text-sm">
+                    {idx + 1}
+                  </div>
+                  <Input
+                    value={inst.label}
+                    onChange={(e) => {
+                      const newList = [...eventDetails.installments]
+                      newList[idx].label = e.target.value
+                      updateEventDetails({ installments: newList })
+                    }}
+                    className="flex-1 font-bold border-none bg-transparent h-8 focus-visible:ring-1"
+                  />
+                  <Input
+                    type="date"
+                    value={inst.dueDate}
+                    onChange={(e) => {
+                      const newList = [...eventDetails.installments]
+                      newList[idx].dueDate = e.target.value
+                      updateEventDetails({ installments: newList })
+                    }}
+                    className="w-32 font-bold border-primary/20 h-8"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      updateEventDetails({
+                        installments: eventDetails.installments.filter((i) => i.id !== inst.id),
+                      })
+                    }}
+                    className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              {eventDetails.installments.length === 0 && (
+                <div className="text-center py-6 text-foreground/40 font-medium border-2 border-dashed border-primary/5 rounded-2xl">
+                  Nenhuma parcela configurada.
+                </div>
+              )}
+            </div>
+            <p className="text-[10px] text-foreground/40 font-medium mt-4 bg-primary/5 p-2 rounded-lg italic">
+              * A "Data Limite" define quando o status muda automaticamente para "Atrasado" para pagamentos pendentes.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="shadow-md border-amber-200 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardHeader className="bg-amber-50/50 border-b border-amber-100 flex flex-row items-center justify-between">
@@ -341,67 +453,68 @@ export default function Finance() {
             <TableHeader className="bg-white">
               <TableRow className="border-amber-100">
                 <TableHead className="w-[180px] font-bold text-foreground">Família</TableHead>
-                <TableHead className="text-center font-bold text-foreground">P1</TableHead>
-                <TableHead className="text-center font-bold text-foreground">P2</TableHead>
-                <TableHead className="text-center font-bold text-foreground">P3</TableHead>
+                {eventDetails.installments.map((inst) => (
+                  <TableHead key={inst.id} className="text-center font-bold text-foreground min-w-[80px]">
+                    {inst.label}
+                  </TableHead>
+                ))}
                 <TableHead className="text-center font-bold text-foreground w-[120px]">
-                  Cota Social (Manual)
+                  Cota Social
+                </TableHead>
+                <TableHead className="text-center font-bold text-foreground w-[140px]">
+                  Vencimento Indiv.
                 </TableHead>
                 <TableHead className="text-right font-bold text-foreground pr-6">
-                  Total Calculado
+                  Total
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {participants.map((p) => (
-                <TableRow key={p.id} className="border-amber-50 hover:bg-orange-50/30">
-                  <TableCell className="font-bold text-foreground text-base py-4 pl-4">
-                    {p.name}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <button
-                      onClick={() => toggleStatus(p.id, 'p1', p.p1)}
-                      className="p-2 hover:scale-110 hover:bg-orange-100 rounded-xl transition-all"
-                    >
-                      {getStatusIcon(p.p1)}
-                    </button>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <button
-                      onClick={() => toggleStatus(p.id, 'p2', p.p2)}
-                      className="p-2 hover:scale-110 hover:bg-orange-100 rounded-xl transition-all"
-                    >
-                      {getStatusIcon(p.p2)}
-                    </button>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <button
-                      onClick={() => toggleStatus(p.id, 'p3', p.p3)}
-                      className="p-2 hover:scale-110 hover:bg-orange-100 rounded-xl transition-all"
-                    >
-                      {getStatusIcon(p.p3)}
-                    </button>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Input
-                      type="number"
-                      placeholder="Padrão"
-                      className={cn(
-                        'w-24 text-center font-bold mx-auto',
-                        p.socialQuotaOverride !== null ? 'border-primary text-primary' : '',
-                      )}
-                      value={p.socialQuotaOverride ?? ''}
-                      onChange={(e) => {
-                        const val = e.target.value === '' ? null : Number(e.target.value)
-                        updateParticipant(p.id, { socialQuotaOverride: val })
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell className="text-right font-black text-lg text-primary pr-6">
-                    R$ {calculateBaseFee(p).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {participants.map((p) => {
+                return (
+                  <TableRow key={p.id} className="border-amber-50 hover:bg-orange-50/30">
+                    <TableCell className="font-bold text-foreground text-base py-4 pl-4">
+                      {p.name}
+                    </TableCell>
+                    {eventDetails.installments.map((inst) => (
+                      <TableCell key={inst.id} className="text-center">
+                        <button
+                          onClick={() => toggleStatus(p.id, inst.id, p.payments[inst.id] || 'pending')}
+                          className="p-2 hover:scale-110 hover:bg-orange-100 rounded-xl transition-all"
+                        >
+                          {getStatusIcon(p.payments[inst.id] || 'pending', inst.dueDate)}
+                        </button>
+                      </TableCell>
+                    ))}
+                    <TableCell className="text-center">
+                      <Input
+                        type="number"
+                        placeholder="Padrão"
+                        className={cn(
+                          'w-20 text-center font-bold mx-auto text-xs',
+                          p.socialQuotaOverride !== null ? 'border-primary text-primary' : '',
+                        )}
+                        value={p.socialQuotaOverride ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? null : Number(e.target.value)
+                          updateParticipant(p.id, { socialQuotaOverride: val })
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Input
+                        type="date"
+                        className="w-28 text-center font-bold mx-auto text-[10px]"
+                        value={p.dueDate || ''}
+                        onChange={(e) => updateParticipant(p.id, { dueDate: e.target.value })}
+                      />
+                    </TableCell>
+                    <TableCell className="text-right font-black text-base text-primary pr-6">
+                      R$ {calculateBaseFee(p).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>
@@ -487,7 +600,7 @@ export default function Finance() {
                     <TableCell className="text-center">
                       {user.isGovernance ? (
                         <button
-                          onClick={() => toggleStatus(p.id, 'beverageStatus', p.beverageStatus)}
+                          onClick={() => toggleBeverageStatus(p.id, p.beverageStatus)}
                           className="p-2 hover:scale-110 hover:bg-emerald-100 rounded-xl transition-all"
                         >
                           {getStatusIcon(p.beverageStatus)}

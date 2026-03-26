@@ -46,6 +46,8 @@ export default function Profile() {
           name: '',
           category: 'adult',
           isDrinking: false,
+          isVegetarian: false,
+          restrictions: '',
         },
       ],
     }))
@@ -75,17 +77,17 @@ export default function Profile() {
   const handleSave = () => {
     setUser(formData)
     toast({
-      title: 'Família atualizada! 🎉',
-      description: 'As informações do seu bonde foram salvas com sucesso.',
+      title: 'Galera atualizada! 🎉',
+      description: 'As informações da sua galera foram salvas com sucesso.',
     })
   }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       <div className="mb-8">
-        <h1 className="text-3xl font-black font-display text-foreground">Minha Família</h1>
+        <h1 className="text-3xl font-black font-display text-foreground">Minha Galera</h1>
         <p className="text-foreground/60 text-base mt-1 font-medium">
-          Gerencie as informações da sua turma para a festança do Farrão.
+          Gerencie as informações da sua galera para a festança do Farrão.
         </p>
       </div>
 
@@ -112,7 +114,7 @@ export default function Profile() {
             <span>Perfil do Representante</span>
           </CardTitle>
           <CardDescription className="text-sm font-medium">
-            Quem é o cabeça desta família?
+            Quem é o cabeça desta galera?
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
@@ -174,7 +176,7 @@ export default function Profile() {
           <div>
             <CardTitle className="flex items-center space-x-2 text-xl">
               <Users className="w-5 h-5 text-secondary" />
-              <span>Membros da Família</span>
+              <span>Membros da Galera</span>
             </CardTitle>
             <CardDescription className="text-sm font-medium mt-1">
               Quem exatamente está indo com você? Adicione o nome e idade/tipo.
@@ -193,57 +195,78 @@ export default function Profile() {
           {formData.members.map((m) => (
             <div
               key={m.id}
-              className="flex flex-col sm:flex-row gap-4 p-4 bg-orange-50/30 border border-amber-200 rounded-xl items-start sm:items-end transition-all hover:shadow-md"
+              className="flex flex-col gap-4 p-4 bg-orange-50/30 border border-amber-200 rounded-xl transition-all hover:shadow-md"
             >
-              <div className="w-full flex-1 space-y-2">
-                <Label className="font-bold text-foreground">Nome Completo</Label>
-                <Input
-                  value={m.name}
-                  onChange={(e) => updateMember(m.id, 'name', e.target.value)}
-                  className="bg-white border-amber-200 focus-visible:ring-primary"
-                  placeholder="Ex: João da Silva"
-                />
-              </div>
-              <div className="w-full sm:w-48 space-y-2">
-                <Label className="font-bold text-foreground">Categoria</Label>
-                <Select
-                  value={m.category}
-                  onValueChange={(val: MemberCategory) => updateMember(m.id, 'category', val)}
-                >
-                  <SelectTrigger className="bg-white border-amber-200">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="adult">Adulto</SelectItem>
-                    <SelectItem value="child_under_10">Criança (até 10)</SelectItem>
-                    <SelectItem value="child_11_to_16">Criança (11 a 16)</SelectItem>
-                    <SelectItem value="nanny">Babá / Staff</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
-                {m.category === 'adult' ? (
+              <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+                <div className="w-full flex-1 space-y-2">
+                  <Label className="font-bold text-foreground">Nome Completo</Label>
+                  <Input
+                    value={m.name}
+                    onChange={(e) => updateMember(m.id, 'name', e.target.value)}
+                    className="bg-white border-amber-200 focus-visible:ring-primary"
+                    placeholder="Ex: João da Silva"
+                  />
+                </div>
+                <div className="w-full sm:w-48 space-y-2">
+                  <Label className="font-bold text-foreground">Categoria</Label>
+                  <Select
+                    value={m.category}
+                    onValueChange={(val: MemberCategory) => updateMember(m.id, 'category', val)}
+                  >
+                    <SelectTrigger className="bg-white border-amber-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="adult">Adulto</SelectItem>
+                      <SelectItem value="child_under_10">Criança (até 10)</SelectItem>
+                      <SelectItem value="child_11_to_16">Criança (11 a 16)</SelectItem>
+                      <SelectItem value="nanny">Babá / Staff</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
+                  {m.category === 'adult' ? (
+                    <div className="flex flex-col items-center space-y-2">
+                      <Label className="font-bold text-foreground text-[10px] uppercase tracking-wider text-center">
+                        Bebe Chopp?
+                      </Label>
+                      <Switch
+                        checked={m.isDrinking}
+                        onCheckedChange={(val) => updateMember(m.id, 'isDrinking', val)}
+                        className="data-[state=checked]:bg-emerald-500 scale-[0.85]"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-[66px]" />
+                  )}
                   <div className="flex flex-col items-center space-y-2">
                     <Label className="font-bold text-foreground text-[10px] uppercase tracking-wider text-center">
-                      Bebe Chopp?
+                      Vegetariano?
                     </Label>
                     <Switch
-                      checked={m.isDrinking}
-                      onCheckedChange={(val) => updateMember(m.id, 'isDrinking', val)}
-                      className="data-[state=checked]:bg-emerald-500 scale-[0.85]"
+                      checked={m.isVegetarian}
+                      onCheckedChange={(val) => updateMember(m.id, 'isVegetarian', val)}
+                      className="data-[state=checked]:bg-secondary scale-[0.85]"
                     />
                   </div>
-                ) : (
-                  <div className="w-[66px]" />
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50 mt-4 sm:mt-0 rounded-xl shrink-0"
-                  onClick={() => removeMember(m.id)}
-                >
-                  <X className="w-5 h-5" />
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 mt-4 sm:mt-0 rounded-xl shrink-0"
+                    onClick={() => removeMember(m.id)}
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+              <div className="w-full space-y-2">
+                <Label className="font-bold text-foreground text-xs uppercase tracking-wider">Restrições / Alergias Alimentares</Label>
+                <Input
+                  value={m.restrictions || ''}
+                  onChange={(e) => updateMember(m.id, 'restrictions', e.target.value)}
+                  className="bg-white border-amber-200 focus-visible:ring-primary"
+                  placeholder="Ex: Alergia a camarão, sem glutén..."
+                />
               </div>
             </div>
           ))}
@@ -251,7 +274,7 @@ export default function Profile() {
             <div className="text-center bg-white border border-dashed border-amber-200 p-8 rounded-xl">
               <p className="text-foreground/50 font-bold">Nenhum membro adicionado.</p>
               <p className="text-foreground/40 text-sm mt-1">
-                Adicione você e sua turma para continuar.
+                Adicione você e sua galera para continuar.
               </p>
             </div>
           )}
@@ -286,49 +309,16 @@ export default function Profile() {
         </CardContent>
       </Card>
 
+
       <Card className="shadow-sm border-amber-100 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden mb-12">
-        <CardHeader className="bg-orange-50/50 border-b border-amber-100">
-          <CardTitle className="flex items-center space-x-2 text-xl">
-            <HandPlatter className="w-5 h-5 text-accent" />
-            <span>Comida & Dieta</span>
-          </CardTitle>
-          <CardDescription className="text-sm font-medium">
-            Pra ninguém passar vontade no churras
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-6">
-          <div className="flex flex-row items-center justify-between rounded-xl border border-amber-200 p-4 bg-white">
-            <div className="space-y-1">
-              <Label className="text-base font-bold">Alguém é Vegetariano/Vegano?</Label>
-              <p className="text-sm text-foreground/60 font-medium">Garante os legumes na brasa!</p>
-            </div>
-            <Switch
-              checked={formData.vegetarian}
-              onCheckedChange={(val) => handleChange('vegetarian', val)}
-              className="data-[state=checked]:bg-secondary"
-            />
-          </div>
-          <div className="space-y-3">
-            <Label htmlFor="restrictions" className="font-bold text-base">
-              Outras restrições ou alergias?
-            </Label>
-            <Textarea
-              id="restrictions"
-              placeholder="Ex: Alergia a camarão, intolerância a lactose..."
-              value={formData.restrictions}
-              onChange={(e) => handleChange('restrictions', e.target.value)}
-              className="resize-none h-28 bg-white border-amber-200 focus-visible:ring-primary text-base p-4"
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="bg-gradient-to-r from-orange-50 to-amber-50 py-5 border-t border-amber-100 flex justify-end">
+        <CardFooter className="bg-gradient-to-r from-orange-50 to-amber-50 py-5 border-t border-amber-100 flex justify-center">
           <Button
             onClick={handleSave}
             size="lg"
             className="w-full sm:w-auto px-10 transition-transform hover:scale-105 active:scale-95 shadow-md font-bold text-base rounded-xl"
           >
             <Save className="w-5 h-5 mr-2" />
-            Salvar Minha Turma
+            Salvar Minha Galera
           </Button>
         </CardFooter>
       </Card>

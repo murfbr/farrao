@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useMemo } from 'react'
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react'
+import * as db from '../firebase/services'
 
 export type MemberCategory = 'adult' | 'child_under_10' | 'child_11_to_16' | 'nanny'
 
@@ -7,6 +8,8 @@ export type FamilyMember = {
   name: string
   category: MemberCategory
   isDrinking: boolean
+  isVegetarian: boolean
+  restrictions: string
 }
 
 export type UserProfile = {
@@ -16,9 +19,8 @@ export type UserProfile = {
   hasConfirmed: boolean
   members: FamilyMember[]
   daysAttending: number
-  vegetarian: boolean
-  restrictions: string
   isGovernance: boolean
+  isSuperAdmin?: boolean
   photoUrl?: string
 }
 
@@ -29,6 +31,7 @@ export type Group = {
   description: string
   type: GroupType
   memberIds: string[]
+  emoji?: string
 }
 
 export type TaskStatus = 'todo' | 'doing' | 'done'
@@ -66,11 +69,10 @@ export type ParticipantRecord = {
   hasConfirmed: boolean
   members: FamilyMember[]
   daysAttending: number
-  p1: FinanceStatus
-  p2: FinanceStatus
-  p3: FinanceStatus
+  payments: Record<string, FinanceStatus> // key is installment ID
   beverageStatus: FinanceStatus
   socialQuotaOverride: number | null
+  dueDate?: string // per-family due date override for all payments
 }
 
 export type PricingTiers = {
@@ -95,6 +97,15 @@ export type EventDetails = {
   date: string
   location: string
   targetDate: string
+  startDate: string
+  endDate: string
+  installments: InstallmentConfig[]
+}
+
+export type InstallmentConfig = {
+  id: string
+  label: string
+  dueDate: string
 }
 
 export type MealType = 'Café da Manhã' | 'Almoço' | 'Jantar' | 'Petiscos' | 'Bebidas'
@@ -140,6 +151,9 @@ type AppState = {
   groups: Group[]
   joinGroup: (groupId: string) => void
   addGroup: (group: Omit<Group, 'id' | 'memberIds'>) => void
+  updateGroup: (groupId: string, updates: Partial<Group>) => void
+  deleteGroup: (groupId: string) => void
+  leaveGroup: (groupId: string) => void
   tasks: Task[]
   updateTask: (id: string, updates: Partial<Task>) => void
   moveTask: (id: string, newStatus: TaskStatus) => void
@@ -164,6 +178,7 @@ type AppState = {
   deleteShoppingItem: (id: string) => void
   importShoppingItems: (items: Omit<ShoppingItem, 'id'>[]) => void
   bulkAssignShoppingItems: (itemIds: string[], assigneeId: string | null) => void
+  isAuthLoading: boolean
 }
 
 const defaultUser: UserProfile = {
@@ -172,14 +187,13 @@ const defaultUser: UserProfile = {
   email: 'joao@exemplo.com',
   hasConfirmed: false,
   members: [
-    { id: 'u1-1', name: 'João Silva', category: 'adult', isDrinking: true },
-    { id: 'u1-2', name: 'Maria Silva', category: 'adult', isDrinking: true },
-    { id: 'u1-3', name: 'Pedrinho', category: 'child_under_10', isDrinking: false },
+    { id: 'u1-1', name: 'João Silva', category: 'adult', isDrinking: true, isVegetarian: false, restrictions: '' },
+    { id: 'u1-2', name: 'Maria Silva', category: 'adult', isDrinking: true, isVegetarian: true, restrictions: 'Sem glutén' },
+    { id: 'u1-3', name: 'Pedrinho', category: 'child_under_10', isDrinking: false, isVegetarian: false, restrictions: '' },
   ],
   daysAttending: 4,
-  vegetarian: false,
-  restrictions: '',
   isGovernance: true,
+  isSuperAdmin: true,
 }
 
 const mockParticipants: ParticipantRecord[] = [
@@ -188,14 +202,12 @@ const mockParticipants: ParticipantRecord[] = [
     name: 'João Silva (Você)',
     hasConfirmed: false,
     members: [
-      { id: 'u1-1', name: 'João Silva', category: 'adult', isDrinking: true },
-      { id: 'u1-2', name: 'Maria Silva', category: 'adult', isDrinking: true },
-      { id: 'u1-3', name: 'Pedrinho', category: 'child_under_10', isDrinking: false },
+      { id: 'u1-1', name: 'João Silva', category: 'adult', isDrinking: true, isVegetarian: false, restrictions: '' },
+      { id: 'u1-2', name: 'Maria Silva', category: 'adult', isDrinking: true, isVegetarian: true, restrictions: 'Sem glutén' },
+      { id: 'u1-3', name: 'Pedrinho', category: 'child_under_10', isDrinking: false, isVegetarian: false, restrictions: '' },
     ],
     daysAttending: 4,
-    p1: 'paid',
-    p2: 'paid',
-    p3: 'pending',
+    payments: { '1': 'paid', '2': 'paid', '3': 'pending' },
     beverageStatus: 'pending',
     socialQuotaOverride: null,
   },
@@ -204,14 +216,12 @@ const mockParticipants: ParticipantRecord[] = [
     name: 'Família Souza',
     hasConfirmed: true,
     members: [
-      { id: 'p2-1', name: 'Carlos Souza', category: 'adult', isDrinking: true },
-      { id: 'p2-2', name: 'Ana Souza', category: 'adult', isDrinking: true },
-      { id: 'p2-3', name: 'Bia Souza', category: 'child_11_to_16', isDrinking: false },
+      { id: 'p2-1', name: 'Carlos Souza', category: 'adult', isDrinking: true, isVegetarian: false, restrictions: '' },
+      { id: 'p2-2', name: 'Ana Souza', category: 'adult', isDrinking: true, isVegetarian: false, restrictions: '' },
+      { id: 'p2-3', name: 'Bia Souza', category: 'child_11_to_16', isDrinking: false, isVegetarian: false, restrictions: '' },
     ],
     daysAttending: 3,
-    p1: 'paid',
-    p2: 'pending',
-    p3: 'pending',
+    payments: { '1': 'paid', '2': 'pending', '3': 'pending' },
     beverageStatus: 'paid',
     socialQuotaOverride: null,
   },
@@ -219,11 +229,9 @@ const mockParticipants: ParticipantRecord[] = [
     id: 'p3',
     name: 'Tio Roberto',
     hasConfirmed: true,
-    members: [{ id: 'p3-1', name: 'Roberto', category: 'adult', isDrinking: true }],
+    members: [{ id: 'p3-1', name: 'Roberto', category: 'adult', isDrinking: true, isVegetarian: false, restrictions: '' }],
     daysAttending: 2,
-    p1: 'late',
-    p2: 'pending',
-    p3: 'pending',
+    payments: { '1': 'late', '2': 'pending', '3': 'pending' },
     beverageStatus: 'pending',
     socialQuotaOverride: 150,
   },
@@ -362,167 +370,243 @@ const AppContext = createContext<AppState | undefined>(undefined)
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUserState] = useState<UserProfile>(defaultUser)
-  const [participants, setParticipants] = useState<ParticipantRecord[]>(mockParticipants)
+  const [participants, setParticipants] = useState<ParticipantRecord[]>([])
   const [pricingTiers, setPricingTiers] = useState<PricingTiers>(defaultPricingTiers)
-  const [beverageTotal, setBeverageTotal] = useState<number>(1500)
+  const [beverageTotal, setBeverageTotal] = useState<number>(0)
 
-  const [groups, setGroups] = useState<Group[]>(mockGroups)
-  const [tasks, setTasks] = useState<Task[]>(mockTasks)
-  const [polls, setPolls] = useState<Poll[]>(mockPolls)
-  const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements)
+  const [groups, setGroups] = useState<Group[]>([])
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [polls, setPolls] = useState<Poll[]>([])
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
 
-  const [dailyMenus, setDailyMenus] = useState<DailyMenu[]>(mockDailyMenus)
-  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>(mockShoppingItems)
+  const [dailyMenus, setDailyMenus] = useState<DailyMenu[]>([])
+  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([])
 
   const [eventDetails, setEventDetails] = useState<EventDetails>({
-    title: 'Farrão 2024',
-    message: 'A festa mais esperada da família. Muita música, resenha e alegria!',
-    date: '20 a 24 de Dezembro',
-    location: 'Ibiúna, SP',
-    targetDate: '2024-12-20T00:00:00',
+    title: 'Farrão',
+    message: '',
+    date: '',
+    location: '',
+    targetDate: '',
+    startDate: '',
+    endDate: '',
+    installments: [
+      { id: '1', label: 'Parcela 1', dueDate: '2025-10-10' },
+      { id: '2', label: 'Parcela 2', dueDate: '2025-11-10' },
+      { id: '3', label: 'Parcela 3', dueDate: '2025-12-10' },
+    ],
   })
 
-  const [venuePhotos] = useState<string[]>([
-    'https://img.usecurling.com/p/800/800?q=country%20house&seed=1',
-    'https://img.usecurling.com/p/800/800?q=swimming%20pool&seed=2',
-    'https://img.usecurling.com/p/800/800?q=barbecue%20grill&seed=3',
-    'https://img.usecurling.com/p/800/800?q=garden&seed=4',
-  ])
+  const [venuePhotos, setVenuePhotos] = useState<string[]>([])
+  const [isAuthLoading, setIsAuthLoading] = useState(true)
 
-  const setUser = (newUser: UserProfile) => {
-    setUserState(newUser)
-    setParticipants((prev) =>
-      prev.map((p) => {
-        if (p.id === newUser.id) {
-          return {
-            ...p,
-            name: newUser.name,
-            hasConfirmed: newUser.hasConfirmed,
-            members: newUser.members,
-            daysAttending: newUser.daysAttending,
+  // Auth Listener
+  useEffect(() => {
+    const unsubAuth = db.subscribeToAuth(async (firebaseUser) => {
+      if (firebaseUser) {
+        let profile = await db.getUserProfile(firebaseUser.uid)
+        const isGod = firebaseUser.email ? await db.checkIfSuperAdmin(firebaseUser.email) : false
+
+        if (!profile) {
+          profile = {
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || 'Convidado',
+            email: firebaseUser.email || '',
+            hasConfirmed: false,
+            members: [
+              {
+                id: firebaseUser.uid + '-1',
+                name: firebaseUser.displayName || 'Titular',
+                category: 'adult',
+                isDrinking: true,
+                isVegetarian: false,
+                restrictions: '',
+              },
+            ],
+            daysAttending: 1,
+            isGovernance: isGod,
+            isSuperAdmin: isGod,
+            photoUrl: firebaseUser.photoURL || '',
           }
+          await db.updateUserProfile(firebaseUser.uid, profile)
+        } else if (isGod && !profile.isGovernance) {
+          // forçamos a governança pra true e corrigimos no banco.
+          profile.isGovernance = true
+          profile.isSuperAdmin = true
+          await db.updateUserProfile(firebaseUser.uid, { isGovernance: true })
+        } else if (isGod) {
+          // Garante que o flag isSuperAdmin esteja no estado local mesmo se já tiver perfil
+          profile.isSuperAdmin = true
         }
-        return p
-      }),
-    )
+        setUserState(profile)
+      } else {
+        setUserState(defaultUser)
+      }
+      setIsAuthLoading(false)
+    })
+    return unsubAuth
+  }, [])
+
+  useEffect(() => {
+    if (isAuthLoading || user.id === 'u1') return
+
+    // Escuta os dados do Evento
+    const unsubEvent = db.subscribeToEventDetails((data) => {
+      if (data) {
+        setEventDetails(data)
+        // Se venuePhotos, pricingTiers e beverageTotal estiverem no doc do evento
+        // Para simplificar, assumimos que estão espalhados, mas no appStore original eram separados.
+      }
+    })
+
+    // Escuta o perfil do usuário atual (simulado como user.id por enquanto)
+    const unsubProfile = db.subscribeToUserProfile(user.id, (data) => {
+      if (data) setUserState(data)
+    })
+
+    // Escuta as coleções
+    const unsubUsers = (user.isGovernance || user.isSuperAdmin)
+      ? db.subscribeToAllEventUsers(setParticipants)
+      : db.subscribeToEventUser(user.id, (data) => setParticipants(data ? [data] : []))
+      
+    const unsubGroups = db.subscribeToGroups(setGroups)
+    const unsubTasks = db.subscribeToTasks(setTasks)
+    const unsubPolls = db.subscribeToPolls(setPolls)
+    const unsubAnnouncements = db.subscribeToAnnouncements(setAnnouncements)
+    const unsubMenus = db.subscribeToMenus(setDailyMenus)
+    const unsubShopping = db.subscribeToShoppingItems(setShoppingItems)
+
+    return () => {
+      unsubEvent()
+      unsubProfile()
+      unsubUsers()
+      unsubGroups()
+      unsubTasks()
+      unsubPolls()
+      unsubAnnouncements()
+      unsubMenus()
+      unsubShopping()
+    }
+  }, [user.id])
+
+  const setUser = async (newUser: UserProfile) => {
+    await db.updateUserProfile(newUser.id, newUser)
   }
 
-  const confirmPresence = () => {
-    setUserState((prev) => ({ ...prev, hasConfirmed: true }))
-    setParticipants((prev) =>
-      prev.map((p) => (p.id === user.id ? { ...p, hasConfirmed: true } : p)),
-    )
+  const confirmPresence = async () => {
+    await db.updateEventUser(user.id, { hasConfirmed: true })
   }
 
-  const toggleGovernance = () =>
+  const toggleGovernance = async () => {
     setUserState((prev) => ({ ...prev, isGovernance: !prev.isGovernance }))
-
-  const updateParticipant = (id: string, updates: Partial<ParticipantRecord>) => {
-    setParticipants((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)))
+    await db.updateUserProfile(user.id, { isGovernance: !user.isGovernance })
   }
 
-  const joinGroup = (groupId: string) => {
-    setGroups((prev) =>
-      prev.map((g) => (g.id === groupId ? { ...g, memberIds: [...g.memberIds, user.id] } : g)),
-    )
+  const updateParticipant = async (id: string, updates: Partial<ParticipantRecord>) => {
+    await db.updateEventUser(id, updates)
   }
 
-  const addGroup = (group: Omit<Group, 'id' | 'memberIds'>) => {
-    setGroups((prev) => [
-      ...prev,
-      { ...group, id: Math.random().toString(36).substr(2, 9), memberIds: [user.id] },
-    ])
+  const joinGroup = async (groupId: string) => {
+    const group = groups.find((g) => g.id === groupId)
+    if (group && !group.memberIds.includes(user.id)) {
+      await db.updateGroup(groupId, { memberIds: [...group.memberIds, user.id] })
+    }
   }
 
-  const updateTask = (id: string, updates: Partial<Task>) => {
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)))
+  const addGroup = async (group: Omit<Group, 'id' | 'memberIds'>) => {
+    await db.addGroup({ ...group, memberIds: [user.id] })
   }
 
-  const moveTask = (id: string, newStatus: TaskStatus) => {
-    updateTask(id, { status: newStatus })
+  const updateGroup = async (groupId: string, updates: Partial<Group>) => {
+    await db.updateGroup(groupId, updates)
   }
 
-  const addTask = (task: Omit<Task, 'id'>) => {
-    setTasks((prev) => [
-      ...prev,
-      {
-        ...task,
-        id: Math.random().toString(36).substr(2, 9),
-      },
-    ])
+  const deleteGroup = async (groupId: string) => {
+    await db.deleteGroup(groupId)
   }
 
-  const addPoll = (pollData: Omit<Poll, 'id' | 'votedOptionId' | 'status'>) => {
-    setPolls((prev) => [
-      { ...pollData, id: Math.random().toString(36).substr(2, 9), status: 'open' },
-      ...prev,
-    ])
+  const leaveGroup = async (groupId: string) => {
+    const group = groups.find((g) => g.id === groupId)
+    if (group && group.memberIds.includes(user.id)) {
+      const newMemberIds = group.memberIds.filter((id) => id !== user.id)
+      await db.updateGroup(groupId, { memberIds: newMemberIds })
+      
+      // Unassign tasks from this group that are not done
+      const groupTasks = tasks.filter((t) => t.groupId === groupId && t.assigneeId === user.id && t.status !== 'done')
+      for (const task of groupTasks) {
+        await db.updateTask(task.id, { assignee: '', assigneeId: '' })
+      }
+    }
   }
 
-  const votePoll = (pollId: string, optionId: string) => {
-    setPolls((prev) =>
-      prev.map((p) => {
-        if (p.id === pollId && p.status === 'open' && !p.votedOptionId) {
-          return {
-            ...p,
-            votedOptionId: optionId,
-            options: p.options.map((o) => (o.id === optionId ? { ...o, votes: o.votes + 1 } : o)),
-          }
-        }
-        return p
-      }),
-    )
+  const updateTask = async (id: string, updates: Partial<Task>) => {
+    await db.updateTask(id, updates)
   }
 
-  const addAnnouncement = (ann: Omit<Announcement, 'id' | 'date' | 'archived'>) => {
-    setAnnouncements((prev) => [
-      {
-        ...ann,
-        id: Math.random().toString(36).substr(2, 9),
-        date: new Date().toISOString(),
-        archived: false,
-      },
-      ...prev,
-    ])
+  const moveTask = async (id: string, newStatus: TaskStatus) => {
+    await db.updateTask(id, { status: newStatus })
   }
 
-  const archiveAnnouncement = (id: string) => {
-    setAnnouncements((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, archived: true, pinned: false } : a)),
-    )
+  const addTask = async (task: Omit<Task, 'id'>) => {
+    await db.addTask(task)
   }
 
-  const updateEventDetails = (details: Partial<EventDetails>) => {
-    setEventDetails((prev) => ({ ...prev, ...details }))
+  const addPoll = async (pollData: Omit<Poll, 'id' | 'votedOptionId' | 'status'>) => {
+    await db.addPoll({ ...pollData, status: 'open' })
   }
 
-  const updateDailyMenus = (menus: DailyMenu[]) => {
+  const votePoll = async (pollId: string, optionId: string) => {
+    const poll = polls.find((p) => p.id === pollId)
+    if (poll && poll.status === 'open' && !poll.votedOptionId) {
+      // In a real app we would use Firebase Transactions to avoid race conditions.
+      const updatedOptions = poll.options.map((o) =>
+        o.id === optionId ? { ...o, votes: o.votes + 1 } : o
+      )
+      // For simplicity matching the UI mock
+      await db.updatePoll(pollId, { options: updatedOptions, votedOptionId: optionId })
+    }
+  }
+
+  const addAnnouncement = async (ann: Omit<Announcement, 'id' | 'date' | 'archived'>) => {
+    await db.addAnnouncement({ ...ann, date: new Date().toISOString(), archived: false })
+  }
+
+  const archiveAnnouncement = async (id: string) => {
+    await db.updateAnnouncement(id, { archived: true, pinned: false })
+  }
+
+  const updateEventDetails = async (details: Partial<EventDetails>) => {
+    await db.updateEventDetails(details)
+  }
+
+  const updateDailyMenus = async (menus: DailyMenu[]) => {
+    // Note: If menus are an array of documents, we handle them document by document. 
+    // The original app states replaces the whole array. We will mock the replacement.
     setDailyMenus(menus)
   }
 
-  const addShoppingItem = (item: Omit<ShoppingItem, 'id'>) => {
-    setShoppingItems((prev) => [...prev, { ...item, id: Math.random().toString(36).substr(2, 9) }])
+  const addShoppingItem = async (item: Omit<ShoppingItem, 'id'>) => {
+    await db.addShoppingItem(item)
   }
 
-  const updateShoppingItem = (id: string, updates: Partial<ShoppingItem>) => {
-    setShoppingItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...updates } : i)))
+  const updateShoppingItem = async (id: string, updates: Partial<ShoppingItem>) => {
+    await db.updateShoppingItem(id, updates)
   }
 
-  const deleteShoppingItem = (id: string) => {
-    setShoppingItems((prev) => prev.filter((i) => i.id !== id))
+  const deleteShoppingItem = async (id: string) => {
+    await db.deleteShoppingItem(id)
   }
 
-  const importShoppingItems = (items: Omit<ShoppingItem, 'id'>[]) => {
-    const newItems = items.map((i) => ({ ...i, id: Math.random().toString(36).substr(2, 9) }))
-    setShoppingItems((prev) => [...newItems, ...prev])
+  const importShoppingItems = async (items: Omit<ShoppingItem, 'id'>[]) => {
+    for (const item of items) {
+      await db.addShoppingItem(item)
+    }
   }
 
-  const bulkAssignShoppingItems = (itemIds: string[], assigneeId: string | null) => {
-    setShoppingItems((prev) =>
-      prev.map((item) =>
-        itemIds.includes(item.id) ? { ...item, assignedToId: assigneeId } : item,
-      ),
-    )
+  const bulkAssignShoppingItems = async (itemIds: string[], assigneeId: string | null) => {
+    for (const id of itemIds) {
+      await db.updateShoppingItem(id, { assignedToId: assigneeId })
+    }
   }
 
   const totalGuests = useMemo(
@@ -546,6 +630,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         groups,
         joinGroup,
         addGroup,
+        updateGroup,
+        deleteGroup,
+        leaveGroup,
         tasks,
         updateTask,
         moveTask,
@@ -568,6 +655,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteShoppingItem,
         importShoppingItems,
         bulkAssignShoppingItems,
+        isAuthLoading,
       }}
     >
       {children}

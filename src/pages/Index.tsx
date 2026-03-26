@@ -106,8 +106,9 @@ export default function Index() {
     toast({ title: 'Informações do evento atualizadas! ✅' })
   }
 
-  const targetDate = new Date(eventDetails.targetDate)
+  const targetDate = new Date(eventDetails.startDate || eventDetails.targetDate)
   const today = new Date()
+  today.setHours(0, 0, 0, 0) // Normalize today to the start of the day
   const diffDays = Math.ceil(
     Math.max(targetDate.getTime() - today.getTime(), 0) / (1000 * 60 * 60 * 24),
   )
@@ -142,13 +143,25 @@ export default function Index() {
                 className="h-24 bg-orange-50/30 border-amber-200 resize-none font-medium"
               />
             </div>
-            <div className="space-y-2">
-              <Label className="font-bold">Data do Evento</Label>
-              <Input
-                value={editForm.date}
-                onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
-                className="bg-orange-50/30 border-amber-200 font-medium"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="font-bold">Data Inicial</Label>
+                <Input
+                  type="date"
+                  value={editForm.startDate}
+                  onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
+                  className="bg-orange-50/30 border-amber-200 font-medium"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold">Data Final</Label>
+                <Input
+                  type="date"
+                  value={editForm.endDate}
+                  onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
+                  className="bg-orange-50/30 border-amber-200 font-medium"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label className="font-bold">Local</Label>
@@ -238,7 +251,10 @@ export default function Index() {
               <div className="p-2 bg-white/20 rounded-lg shrink-0">
                 <Calendar className="w-5 h-5 text-white" />
               </div>
-              <span>{eventDetails.date}</span>
+              <span>
+                {eventDetails.startDate ? new Date(eventDetails.startDate).toLocaleDateString('pt-BR') : eventDetails.date}
+                {eventDetails.endDate && ` até ${new Date(eventDetails.endDate).toLocaleDateString('pt-BR')}`}
+              </span>
             </div>
             <div className="hidden sm:block w-px bg-white/20" />
             <div className="flex items-center space-x-3">
@@ -366,7 +382,7 @@ export default function Index() {
                 variant="outline"
               >
                 <Link to="/tasks">
-                  Tarefas do Bonde <ArrowRight className="w-4 h-4 ml-2 text-secondary" />
+                  Tarefas da Galera <ArrowRight className="w-4 h-4 ml-2 text-secondary" />
                 </Link>
               </Button>
             </CardContent>

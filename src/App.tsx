@@ -11,26 +11,60 @@ import Voting from './pages/Voting'
 import Participants from './pages/Participants'
 import Food from './pages/Food'
 import NotFound from './pages/NotFound'
-import { AppProvider } from './stores/useAppStore'
+import Login from './pages/Login'
+import useAppStore, { AppProvider } from './stores/useAppStore'
+
+import Register from './pages/Register'
+import AdminInvites from './pages/AdminInvites'
+
+const MainApp = () => {
+  const { user, isAuthLoading } = useAppStore()
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 to-amber-100">
+        <div className="animate-pulse flex flex-col items-center space-y-4">
+          <span className="text-6xl">🥩</span>
+          <p className="font-bold text-primary font-display text-xl tracking-wider">Acendendo o fogo...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (user.id === 'u1') {
+    return (
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="*" element={<Login />} />
+      </Routes>
+    )
+  }
+
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<Index />} />
+        <Route path="/participants" element={<Participants />} />
+        <Route path="/food" element={<Food />} />
+        <Route path="/tasks" element={<Tasks />} />
+        <Route path="/voting" element={<Voting />} />
+        <Route path="/finance" element={<Finance />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/admin" element={<AdminInvites />} />
+      </Route>
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  )
+}
 
 const App = () => (
   <AppProvider>
-    <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
+    <BrowserRouter>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/participants" element={<Participants />} />
-            <Route path="/food" element={<Food />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/voting" element={<Voting />} />
-            <Route path="/finance" element={<Finance />} />
-            <Route path="/profile" element={<Profile />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <MainApp />
       </TooltipProvider>
     </BrowserRouter>
   </AppProvider>

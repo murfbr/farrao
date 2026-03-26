@@ -10,6 +10,7 @@ import {
   ShieldAlert,
   Music,
   Utensils,
+  KeyRound,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -65,6 +66,20 @@ export default function Layout() {
               </Link>
             )
           })}
+          {user.isGovernance && (
+            <Link
+              to="/admin"
+              className={cn(
+                'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 mt-4',
+                location.pathname === '/admin'
+                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-md shadow-emerald-500/20 scale-105 origin-left'
+                  : 'text-foreground/70 hover:bg-emerald-50/50 hover:text-emerald-600 border border-emerald-100/50',
+              )}
+            >
+              <KeyRound className="w-5 h-5" />
+              <span className="font-semibold">Convites (Admin)</span>
+            </Link>
+          )}
         </nav>
       </aside>
 
@@ -80,7 +95,7 @@ export default function Layout() {
           </div>
           <div className="hidden md:flex flex-col">
             <h2 className="text-lg font-bold font-display text-foreground/80">
-              Festa da Família 2024 🎸
+              Farrão 2026 🎸
             </h2>
           </div>
           <div className="flex items-center space-x-4">
@@ -158,6 +173,21 @@ export default function Layout() {
               </Link>
             )
           })}
+          {user.isGovernance && (
+            <Link
+              to="/admin"
+              className={cn(
+                'flex flex-col items-center justify-center w-full h-full space-y-1 relative',
+                location.pathname === '/admin' ? 'text-emerald-600' : 'text-foreground/40',
+              )}
+            >
+              {location.pathname === '/admin' && (
+                <span className="absolute -top-2 w-8 h-1 bg-emerald-500 rounded-full"></span>
+              )}
+              <KeyRound className={cn('w-5 h-5', location.pathname === '/admin' && 'fill-emerald-500/10')} />
+              <span className="text-[10px] font-bold">Convites</span>
+            </Link>
+          )}
         </nav>
       </div>
     </div>

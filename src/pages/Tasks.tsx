@@ -1,8 +1,18 @@
 import { useState } from 'react'
-import { Plus, ArrowLeft, Tent } from 'lucide-react'
+import { Plus, ArrowLeft, Tent, Pencil, Trash2, Check, X as CloseIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   Dialog,
   DialogContent,
@@ -31,7 +41,7 @@ import TaskBoard from '@/components/tasks/TaskBoard'
 import TaskDetailDialog from '@/components/tasks/TaskDetailDialog'
 
 export default function Tasks() {
-  const { user, groups, joinGroup, addGroup } = useAppStore()
+  const { user, groups, joinGroup, addGroup, updateGroup, deleteGroup, leaveGroup } = useAppStore()
   const { toast } = useToast()
 
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
@@ -40,8 +50,13 @@ export default function Tasks() {
 
   const [newGroupName, setNewGroupName] = useState('')
   const [newGroupDesc, setNewGroupDesc] = useState('')
+  const [newGroupEmoji, setNewGroupEmoji] = useState('🤝')
   const [newGroupType, setNewGroupType] = useState<GroupType>('general')
   const [openGroupAdd, setOpenGroupAdd] = useState(false)
+
+  const [isEditingDesc, setIsEditingDesc] = useState(false)
+  const [editDescValue, setEditDescValue] = useState('')
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const availableGroups = groups.filter(
     (g) => g.type === 'general' || g.memberIds.includes(user.id) || user.isGovernance,
@@ -50,12 +65,33 @@ export default function Tasks() {
 
   const handleCreateGroup = () => {
     if (!newGroupName.trim()) return
-    addGroup({ name: newGroupName, description: newGroupDesc, type: newGroupType })
+    addGroup({ 
+      name: newGroupName, 
+      description: newGroupDesc, 
+      type: newGroupType,
+      emoji: newGroupEmoji 
+    })
     setNewGroupName('')
     setNewGroupDesc('')
+    setNewGroupEmoji('🤝')
     setNewGroupType('general')
     setOpenGroupAdd(false)
     toast({ title: 'Equipe Criada com Sucesso! 🤝' })
+  }
+
+  const handleUpdateDesc = () => {
+    if (!selectedGroupId) return
+    updateGroup(selectedGroupId, { description: editDescValue })
+    setIsEditingDesc(false)
+    toast({ title: 'Descrição atualizada! ✨' })
+  }
+
+  const handleDeleteGroup = () => {
+    if (!selectedGroupId) return
+    deleteGroup(selectedGroupId)
+    setSelectedGroupId(null)
+    setIsDeleteDialogOpen(false)
+    toast({ title: 'Equipe apagada.', variant: 'destructive' })
   }
 
   const handleTaskClick = (task: Task) => {
@@ -78,7 +114,7 @@ export default function Tasks() {
           <div>
             <h1 className="text-3xl font-black font-display text-foreground">Equipes de Apoio</h1>
             <p className="text-foreground/60 text-base font-medium mt-1">
-              Nossa festa é feita por todos. Escolha um bonde para ajudar na organização!
+              Nossa festa é feita por todos. Escolha uma galera para ajudar na organização!
             </p>
           </div>
           {user.isGovernance && (
@@ -91,7 +127,7 @@ export default function Tasks() {
               <DialogContent className="sm:max-w-[425px] border-amber-200">
                 <DialogHeader>
                   <DialogTitle className="font-display font-black text-2xl">
-                    Montar Bonde
+                    Montar Galera
                   </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-5 py-4">
@@ -114,23 +150,28 @@ export default function Tasks() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-bold">Tipo de Acesso</Label>
-                    <Select
-                      value={newGroupType}
-                      onValueChange={(val: GroupType) => setNewGroupType(val)}
-                    >
-                      <SelectTrigger className="bg-orange-50/30 border-amber-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="general" className="font-medium text-emerald-700">
-                          Aberto (Qualquer um participa)
-                        </SelectItem>
-                        <SelectItem value="governance" className="font-medium text-red-700">
-                          Restrito (Apenas Governança)
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label className="font-bold">Emoji da Equipe</Label>
+                    <div className="flex gap-2 flex-wrap">
+                      {['🤝', '🍖', '🍻', '🎸', '⚽', '🏊', '⛺', '🔥', '🚗', '🧹'].map((emo) => (
+                        <Button
+                          key={emo}
+                          variant={newGroupEmoji === emo ? 'default' : 'outline'}
+                          className={cn(
+                            "w-10 h-10 p-0 text-xl rounded-xl",
+                            newGroupEmoji === emo ? "bg-primary" : "bg-orange-50/30 border-amber-200"
+                          )}
+                          onClick={() => setNewGroupEmoji(emo)}
+                        >
+                          {emo}
+                        </Button>
+                      ))}
+                      <Input
+                        value={newGroupEmoji}
+                        onChange={(e) => setNewGroupEmoji(e.target.value)}
+                        placeholder="Emoji"
+                        className="w-16 h-10 bg-orange-50/30 border-amber-200 text-center text-xl"
+                      />
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
@@ -158,7 +199,7 @@ export default function Tasks() {
                 <CardHeader className="flex-1 pb-4">
                   <div className="flex justify-between items-start mb-3">
                     <CardTitle className="text-xl font-bold font-display text-foreground flex items-center">
-                      <Tent className="w-5 h-5 mr-2 text-primary" />
+                      <span className="mr-2 text-2xl">{group.emoji || '🤝'}</span>
                       {group.name}
                     </CardTitle>
                     {group.type === 'governance' && (
@@ -203,7 +244,7 @@ export default function Tasks() {
                       setSelectedGroupId(group.id)
                     }}
                   >
-                    {isMember ? 'Ver Tarefas do Bonde' : 'Entrar na Equipe'}
+                    {isMember ? 'Ver Tarefas da Galera' : 'Entrar na Equipe'}
                   </Button>
                 </CardContent>
               </Card>
@@ -228,6 +269,7 @@ export default function Tasks() {
           </Button>
           <div>
             <div className="flex items-center space-x-3">
+              <span className="text-3xl">{activeGroup?.emoji || '🤝'}</span>
               <h1 className="text-2xl font-black font-display text-foreground">
                 {activeGroup?.name}
               </h1>
@@ -240,17 +282,103 @@ export default function Tasks() {
                 </Badge>
               )}
             </div>
-            <p className="text-foreground/60 text-sm font-medium">Bora agilizar o que falta!</p>
+            <div className="flex items-center gap-2 mt-1">
+              {isEditingDesc ? (
+                <div className="flex items-center gap-2 w-full max-w-md">
+                  <Input 
+                    value={editDescValue}
+                    onChange={(e) => setEditDescValue(e.target.value)}
+                    className="h-8 text-sm"
+                    autoFocus
+                  />
+                  <Button size="sm" variant="ghost" onClick={handleUpdateDesc} className="h-8 w-8 p-0 text-emerald-600">
+                    <Check className="w-4 h-4" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setIsEditingDesc(false)} className="h-8 w-8 p-0 text-red-600">
+                    <CloseIcon className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-foreground/60 text-sm font-medium">
+                    {activeGroup?.description || 'Bora agilizar o que falta!'}
+                  </p>
+                  {activeGroup?.memberIds.includes(user.id) && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 text-foreground/40 hover:text-primary"
+                      onClick={() => {
+                        setEditDescValue(activeGroup.description || '')
+                        setIsEditingDesc(true)
+                      }}
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        <Button
-          onClick={openNewTask}
-          className="shrink-0 shadow-md transition-transform hover:scale-105 active:scale-95 font-bold rounded-xl h-11 px-6"
-        >
-          <Plus className="w-5 h-5 mr-2" /> Puxar Tarefa
-        </Button>
+        <div className="flex items-center gap-2">
+          {activeGroup?.memberIds.includes(user.id) && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-amber-200 text-amber-700 hover:bg-amber-50 font-bold h-11 px-6 shadow-sm mr-2"
+              onClick={() => {
+                if (window.confirm('Tem certeza que deseja sair desta galera? Suas tarefas não concluídas serão desatribuídas.')) {
+                  leaveGroup(activeGroup.id)
+                  setSelectedGroupId(null)
+                  toast({ title: 'Você saiu da galera.' })
+                }
+              }}
+            >
+              Sair da Galera
+            </Button>
+          )}
+          {user.isSuperAdmin && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-xl w-11 h-11 border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 mr-2"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <Trash2 className="w-5 h-5" />
+            </Button>
+          )}
+          <Button
+            onClick={openNewTask}
+            className="shrink-0 shadow-md transition-transform hover:scale-105 active:scale-95 font-bold rounded-xl h-11 px-6"
+          >
+            <Plus className="w-5 h-5 mr-2" /> Puxar Tarefa
+          </Button>
+        </div>
       </div>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="rounded-2xl border-amber-200">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display font-black text-2xl">
+              Apagar Equipe?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="font-medium">
+              Essa ação não tem volta. Todas as tarefas vinculadas a esta equipe também podem ficar órfãs.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl font-bold">Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteGroup}
+              className="bg-red-500 hover:bg-red-600 rounded-xl font-bold"
+            >
+              Sim, Apagar Tudo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <TaskBoard
         groupId={selectedGroupId}

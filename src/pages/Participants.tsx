@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Users, Filter, Beer, DollarSign, Search } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
@@ -18,11 +18,12 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { isBefore, parseISO, startOfDay } from 'date-fns'
 import useAppStore, { MemberCategory, FinanceStatus } from '@/stores/useAppStore'
 import { cn } from '@/lib/utils'
 
 export default function Participants() {
-  const { participants, user } = useAppStore()
+  const { participants, user, eventDetails } = useAppStore()
   const [filter, setFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
 
@@ -31,9 +32,7 @@ export default function Participants() {
     p.members.map((m) => ({
       ...m,
       familyName: p.name,
-      p1: p.p1,
-      p2: p.p2,
-      p3: p.p3,
+      payments: p.payments,
       beverageStatus: p.beverageStatus,
     })),
   )
@@ -70,7 +69,9 @@ export default function Participants() {
     total: allMembers.length,
   }
 
-  const getStatusBadge = (status: FinanceStatus) => {
+  const getStatusBadge = (status: FinanceStatus, dueDate?: string) => {
+    const isLate = status === 'pending' && dueDate && isBefore(parseISO(dueDate), startOfDay(new Date()))
+
     if (status === 'paid')
       return (
         <span
@@ -78,9 +79,10 @@ export default function Participants() {
           title="Pago"
         />
       )
-    if (status === 'pending')
-      return <span className="w-3 h-3 rounded-full bg-amber-400" title="Pendente" />
-    return <span className="w-3 h-3 rounded-full bg-red-500" title="Atrasado" />
+    if (isLate || status === 'late')
+      return <span className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" title="Atrasado" />
+    
+    return <span className="w-3 h-3 rounded-full bg-amber-400" title="Pendente" />
   }
 
   return (
@@ -231,10 +233,12 @@ export default function Participants() {
                     </TableCell>
                     {user.isGovernance && (
                       <TableCell>
-                        <div className="flex justify-center items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-lg py-1.5 px-2 w-fit mx-auto shadow-inner">
-                          {getStatusBadge(m.p1)}
-                          {getStatusBadge(m.p2)}
-                          {getStatusBadge(m.p3)}
+                        <div className="flex justify-center items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-lg py-1.5 px-2 w-fit mx-auto shadow-inner min-w-[60px]">
+                          {eventDetails.installments.map((inst) => (
+                            <React.Fragment key={inst.id}>
+                              {getStatusBadge(m.payments[inst.id] || 'pending', inst.dueDate)}
+                            </React.Fragment>
+                          ))}
                         </div>
                       </TableCell>
                     )}
