@@ -17,6 +17,7 @@ export type UserProfile = {
   name: string
   email: string
   hasConfirmed: boolean
+  profileCompleted: boolean
   members: FamilyMember[]
   daysAttending: number
   isGovernance: boolean
@@ -186,6 +187,7 @@ const defaultUser: UserProfile = {
   name: 'João Silva',
   email: 'joao@exemplo.com',
   hasConfirmed: false,
+  profileCompleted: false,
   members: [
     { id: 'u1-1', name: 'João Silva', category: 'adult', isDrinking: true, isVegetarian: false, restrictions: '' },
     { id: 'u1-2', name: 'Maria Silva', category: 'adult', isDrinking: true, isVegetarian: true, restrictions: 'Sem glutén' },
@@ -413,6 +415,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             name: firebaseUser.displayName || 'Convidado',
             email: firebaseUser.email || '',
             hasConfirmed: false,
+            profileCompleted: false,
             members: [
               {
                 id: firebaseUser.uid + '-1',

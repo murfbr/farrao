@@ -2,7 +2,6 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import {
   Tent,
   ClipboardList,
-  Mic,
   Wallet,
   Users,
   User,
@@ -11,6 +10,7 @@ import {
   Music,
   Utensils,
   KeyRound,
+  Vote,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -23,7 +23,7 @@ const NAV_ITEMS = [
   { path: '/participants', label: 'A Lista', icon: Users },
   { path: '/food', label: 'Comes & Bebes', icon: Utensils },
   { path: '/tasks', label: 'Tarefas', icon: ClipboardList },
-  { path: '/voting', label: 'Votações', icon: Mic },
+  { path: '/voting', label: 'Votações', icon: Vote },
   { path: '/finance', label: 'Finanças', icon: Wallet },
   { path: '/profile', label: 'Meu Perfil', icon: User },
 ]

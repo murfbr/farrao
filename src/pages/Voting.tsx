@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Flame, Music, Beer } from 'lucide-react'
+import { Plus, Flame, Vote, Beer } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -89,10 +89,10 @@ export default function Voting() {
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black font-display text-foreground flex items-center">
-            <Music className="w-8 h-8 mr-3 text-primary" /> Votações do Farrão
+            <Vote className="w-8 h-8 mr-3 text-primary" /> Votações do Farrão
           </h1>
           <p className="text-foreground/60 text-base mt-2 font-medium">
-            Deixe sua opinião nas decisões do evento. A voz do povo é a voz de Deus!
+            Deixe sua opinião nas decisões do evento. A voz do povo é a voz de Jah! 🎸
           </p>
         </div>
 

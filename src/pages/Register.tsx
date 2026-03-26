@@ -25,7 +25,7 @@ export default function Register() {
         title: 'Sucesso!',
         description: 'Verificando permissões de acesso...',
       })
-      navigate('/')
+      navigate('/register-profile')
     } catch (err: any) {
       toast({
         title: 'Erro ao cadastrar',

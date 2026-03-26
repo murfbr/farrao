@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -15,6 +15,7 @@ import Login from './pages/Login'
 import useAppStore, { AppProvider } from './stores/useAppStore'
 
 import Register from './pages/Register'
+import RegisterProfile from './pages/RegisterProfile'
 import AdminInvites from './pages/AdminInvites'
 
 const MainApp = () => {
@@ -41,6 +42,13 @@ const MainApp = () => {
     )
   }
 
+  // Se o usuário está logado mas ainda não completou o perfil, força o redirecionamento
+  // Exceto se ele já estiver na página de completar o perfil
+  const isProfileSetupPath = window.location.pathname === '/register-profile'
+  if (!user.profileCompleted && !isProfileSetupPath) {
+    return <Navigate to="/register-profile" replace />
+  }
+
   return (
     <Routes>
       <Route element={<Layout />}>
@@ -53,6 +61,7 @@ const MainApp = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<AdminInvites />} />
       </Route>
+      <Route path="/register-profile" element={<RegisterProfile />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   )
