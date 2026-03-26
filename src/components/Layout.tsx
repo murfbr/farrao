@@ -30,7 +30,7 @@ const NAV_ITEMS = [
 
 export default function Layout() {
   const location = useLocation()
-  const { user, toggleGovernance } = useAppStore()
+  const { user } = useAppStore()
 
   return (
     <div className="flex h-screen bg-transparent overflow-hidden text-foreground">
@@ -99,29 +99,14 @@ export default function Layout() {
             </h2>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="hidden sm:flex items-center space-x-3 bg-white/80 px-4 py-1.5 rounded-2xl border border-amber-200/50 shadow-sm transition-colors hover:bg-orange-50/50">
-              <div className="flex items-center space-x-1.5">
-                <ShieldAlert
-                  className={cn(
-                    'w-4 h-4 transition-colors',
-                    user.isGovernance ? 'text-primary' : 'text-foreground/30',
-                  )}
-                />
-                <span
-                  className={cn(
-                    'text-[10px] font-black uppercase tracking-widest transition-colors',
-                    user.isGovernance ? 'text-primary' : 'text-foreground/40',
-                  )}
-                >
+            {user.isGovernance && (
+              <div className="hidden sm:flex items-center space-x-2 bg-primary/10 px-4 py-1.5 rounded-2xl border border-primary/20 shadow-sm transition-colors hover:bg-primary/20">
+                <ShieldAlert className="w-4 h-4 text-primary" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">
                   Modo Admin
                 </span>
               </div>
-              <Switch
-                checked={user.isGovernance}
-                onCheckedChange={toggleGovernance}
-                className="scale-[0.8] data-[state=checked]:bg-primary shadow-inner"
-              />
-            </div>
+            )}
             <Button
               variant="ghost"
               size="icon"

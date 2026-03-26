@@ -20,7 +20,7 @@ export type UserProfile = {
   profileCompleted: boolean
   members: FamilyMember[]
   daysAttending: number
-  isGovernance: boolean
+  eventIds: string[]
   isSuperAdmin?: boolean
   photoUrl?: string
 }
@@ -74,6 +74,7 @@ export type ParticipantRecord = {
   beverageStatus: FinanceStatus
   socialQuotaOverride: number | null
   dueDate?: string // per-family due date override for all payments
+  groupIds?: string[]
 }
 
 export type PricingTiers = {
@@ -136,10 +137,9 @@ export type ShoppingItem = {
 }
 
 type AppState = {
-  user: UserProfile
+  user: UserProfile & { isGovernance: boolean }
   setUser: (user: UserProfile) => void
   confirmPresence: () => void
-  toggleGovernance: () => void
 
   pricingTiers: PricingTiers
   setPricingTiers: (tiers: PricingTiers) => void
@@ -194,24 +194,25 @@ const defaultUser: UserProfile = {
     { id: 'u1-3', name: 'Pedrinho', category: 'child_under_10', isDrinking: false, isVegetarian: false, restrictions: '' },
   ],
   daysAttending: 4,
-  isGovernance: true,
+  eventIds: ['farrao-2026'],
   isSuperAdmin: true,
 }
 
 const mockParticipants: ParticipantRecord[] = [
   {
     id: 'u1',
-    name: 'João Silva (Você)',
-    hasConfirmed: false,
+    name: 'João Silva',
+    hasConfirmed: true,
     members: [
       { id: 'u1-1', name: 'João Silva', category: 'adult', isDrinking: true, isVegetarian: false, restrictions: '' },
       { id: 'u1-2', name: 'Maria Silva', category: 'adult', isDrinking: true, isVegetarian: true, restrictions: 'Sem glutén' },
       { id: 'u1-3', name: 'Pedrinho', category: 'child_under_10', isDrinking: false, isVegetarian: false, restrictions: '' },
     ],
     daysAttending: 4,
-    payments: { '1': 'paid', '2': 'paid', '3': 'pending' },
+    payments: { 'i1': 'paid', 'i2': 'pending' },
     beverageStatus: 'pending',
     socialQuotaOverride: null,
+    groupIds: ['g1'],
   },
   {
     id: 'p2',
@@ -223,9 +224,10 @@ const mockParticipants: ParticipantRecord[] = [
       { id: 'p2-3', name: 'Bia Souza', category: 'child_11_to_16', isDrinking: false, isVegetarian: false, restrictions: '' },
     ],
     daysAttending: 3,
-    payments: { '1': 'paid', '2': 'pending', '3': 'pending' },
+    payments: { 'i1': 'paid', 'i2': 'pending' },
     beverageStatus: 'paid',
     socialQuotaOverride: null,
+    groupIds: [],
   },
   {
     id: 'p3',
@@ -233,9 +235,10 @@ const mockParticipants: ParticipantRecord[] = [
     hasConfirmed: true,
     members: [{ id: 'p3-1', name: 'Roberto', category: 'adult', isDrinking: true, isVegetarian: false, restrictions: '' }],
     daysAttending: 2,
-    payments: { '1': 'late', '2': 'pending', '3': 'pending' },
+    payments: { 'i1': 'late', 'i2': 'pending' },
     beverageStatus: 'pending',
     socialQuotaOverride: 150,
+    groupIds: [],
   },
 ]
 
@@ -427,16 +430,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               },
             ],
             daysAttending: 1,
-            isGovernance: isGod,
             isSuperAdmin: isGod,
             photoUrl: firebaseUser.photoURL || '',
+            eventIds: ['farrao-2026'],
           }
           await db.updateUserProfile(firebaseUser.uid, profile)
-        } else if (isGod && !profile.isGovernance) {
-          // forçamos a governança pra true e corrigimos no banco.
-          profile.isGovernance = true
-          profile.isSuperAdmin = true
-          await db.updateUserProfile(firebaseUser.uid, { isGovernance: true })
         } else if (isGod) {
           // Garante que o flag isSuperAdmin esteja no estado local mesmo se já tiver perfil
           profile.isSuperAdmin = true
@@ -468,7 +466,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     })
 
     // Escuta as coleções
-    const unsubUsers = (user.isGovernance || user.isSuperAdmin)
+    const unsubUsers = (isGovernance || user.isSuperAdmin)
       ? db.subscribeToAllEventUsers(setParticipants)
       : db.subscribeToEventUser(user.id, (data) => setParticipants(data ? [data] : []))
       
@@ -500,11 +498,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await db.updateEventUser(user.id, { hasConfirmed: true })
   }
 
-  const toggleGovernance = async () => {
-    setUserState((prev) => ({ ...prev, isGovernance: !prev.isGovernance }))
-    await db.updateUserProfile(user.id, { isGovernance: !user.isGovernance })
-  }
-
   const updateParticipant = async (id: string, updates: Partial<ParticipantRecord>) => {
     await db.updateEventUser(id, updates)
   }
@@ -513,6 +506,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const group = groups.find((g) => g.id === groupId)
     if (group && !group.memberIds.includes(user.id)) {
       await db.updateGroup(groupId, { memberIds: [...group.memberIds, user.id] })
+      
+      const myParticipant = participants.find(p => p.id === user.id)
+      if (myParticipant) {
+        await db.updateEventUser(user.id, { 
+          groupIds: [...(myParticipant.groupIds || []), groupId] 
+        })
+      }
     }
   }
 
@@ -533,6 +533,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (group && group.memberIds.includes(user.id)) {
       const newMemberIds = group.memberIds.filter((id) => id !== user.id)
       await db.updateGroup(groupId, { memberIds: newMemberIds })
+      
+      const myParticipant = participants.find(p => p.id === user.id)
+      if (myParticipant) {
+        await db.updateEventUser(user.id, { 
+          groupIds: (myParticipant.groupIds || []).filter(id => id !== groupId)
+        })
+      }
       
       // Unassign tasks from this group that are not done
       const groupTasks = tasks.filter((t) => t.groupId === groupId && t.assigneeId === user.id && t.status !== 'done')
@@ -617,13 +624,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [participants],
   )
 
+  const isGovernance = useMemo(() => {
+    if (user.isSuperAdmin) return true
+    const myParticipant = participants.find(p => p.id === user.id)
+    if (!myParticipant) return false
+
+    // Check if any of user's groups in this event are governance type
+    const userGroupIds = myParticipant.groupIds || []
+    return groups.some(g => userGroupIds.includes(g.id) && g.type === 'governance')
+  }, [user.id, user.isSuperAdmin, participants, groups])
+
+  const userWithGovernance = useMemo(() => ({
+    ...user,
+    isGovernance
+  }), [user, isGovernance])
+
   return (
     <AppContext.Provider
       value={{
-        user,
+        user: userWithGovernance,
         setUser,
         confirmPresence,
-        toggleGovernance,
         pricingTiers,
         setPricingTiers,
         beverageTotal,

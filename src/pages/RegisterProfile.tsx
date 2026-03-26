@@ -97,6 +97,7 @@ export default function RegisterProfile() {
         members: formData.members,
         daysAttending: formData.daysAttending,
         profileCompleted: true,
+        eventIds: ['farrao-2026'],
       }
 
       await setUser(updatedProfile)
@@ -104,6 +105,7 @@ export default function RegisterProfile() {
         name: formData.name,
         members: formData.members,
         daysAttending: formData.daysAttending,
+        groupIds: [],
       })
 
       toast({

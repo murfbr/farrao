@@ -92,22 +92,6 @@ export default function Profile() {
       </div>
 
       <div className="flex flex-col gap-4">
-        <div className="flex flex-row items-center justify-between rounded-2xl border-2 border-primary/20 p-5 bg-gradient-to-r from-orange-50 to-amber-50 shadow-sm">
-          <div className="space-y-1">
-            <Label className="text-lg font-bold font-display text-primary flex items-center">
-              Modo Organização (Governança)
-            </Label>
-            <p className="text-sm font-medium text-foreground/70">
-              Acesso VIP para gerenciar finanças e enquetes do evento.
-            </p>
-          </div>
-          <Switch
-            checked={formData.isGovernance}
-            onCheckedChange={(val) => handleChange('isGovernance', val)}
-            className="data-[state=checked]:bg-primary"
-          />
-        </div>
-
         <div className="flex flex-row items-center justify-between rounded-2xl border-2 border-emerald-500/20 p-5 bg-gradient-to-r from-emerald-50 to-teal-50 shadow-sm">
           <div className="space-y-1">
             <Label className="text-lg font-bold font-display text-emerald-700 flex items-center">
