@@ -32,13 +32,19 @@ export type Group = {
 }
 
 export type TaskStatus = 'todo' | 'doing' | 'done'
+export type TaskChecklistItem = { id: string; text: string; completed: boolean }
 export type Task = {
   id: string
   groupId: string
   title: string
   status: TaskStatus
   assignee: string
+  assigneeId?: string
   priority: string
+  description?: string
+  checklist?: TaskChecklistItem[]
+  images?: string[]
+  links?: string[]
 }
 
 export type PollOption = { id: string; text: string; votes: number }
@@ -135,8 +141,9 @@ type AppState = {
   joinGroup: (groupId: string) => void
   addGroup: (group: Omit<Group, 'id' | 'memberIds'>) => void
   tasks: Task[]
+  updateTask: (id: string, updates: Partial<Task>) => void
   moveTask: (id: string, newStatus: TaskStatus) => void
-  addTask: (groupId: string, title: string, priority: string) => void
+  addTask: (task: Omit<Task, 'id'>) => void
   polls: Poll[]
   votePoll: (pollId: string, optionId: string) => void
   addPoll: (poll: Omit<Poll, 'id' | 'votedOptionId' | 'status'>) => void
@@ -251,6 +258,40 @@ const mockGroups: Group[] = [
   },
 ]
 
+const mockTasks: Task[] = [
+  {
+    id: 't1',
+    groupId: 'g1',
+    title: 'Comprar carnes e acompanhamentos',
+    status: 'doing',
+    assignee: 'João Silva (Você)',
+    assigneeId: 'u1',
+    priority: 'Alta',
+    description:
+      'Comprar as carnes listadas no cardápio de sábado. <b>Garantir picanha de qualidade!</b>',
+    checklist: [
+      { id: 'c1', text: 'Picanha (4kg)', completed: true },
+      { id: 'c2', text: 'Linguiça toscana (2kg)', completed: false },
+      { id: 'c3', text: 'Pão de alho', completed: false },
+    ],
+    links: ['https://www.swift.com.br'],
+    images: ['https://img.usecurling.com/p/400/300?q=barbecue%20meat&dpr=1'],
+  },
+  {
+    id: 't2',
+    groupId: 'g1',
+    title: 'Alugar caixa de som',
+    status: 'todo',
+    assignee: 'Família Souza',
+    assigneeId: 'p2',
+    priority: 'Média',
+    description: 'Pegar uma caixa JBL ou similar para a beira da piscina.',
+    checklist: [],
+    links: [],
+    images: [],
+  },
+]
+
 const mockDailyMenus: DailyMenu[] = [
   {
     id: 'm1',
@@ -315,7 +356,6 @@ const mockShoppingItems: ShoppingItem[] = [
   },
 ]
 
-const mockTasks: Task[] = []
 const mockPolls: Poll[] = []
 
 const AppContext = createContext<AppState | undefined>(undefined)
@@ -394,20 +434,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ])
   }
 
-  const moveTask = (id: string, newStatus: TaskStatus) => {
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: newStatus } : t)))
+  const updateTask = (id: string, updates: Partial<Task>) => {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)))
   }
 
-  const addTask = (groupId: string, title: string, priority: string) => {
+  const moveTask = (id: string, newStatus: TaskStatus) => {
+    updateTask(id, { status: newStatus })
+  }
+
+  const addTask = (task: Omit<Task, 'id'>) => {
     setTasks((prev) => [
       ...prev,
       {
+        ...task,
         id: Math.random().toString(36).substr(2, 9),
-        groupId,
-        title,
-        status: 'todo',
-        assignee: user.name,
-        priority,
       },
     ])
   }
@@ -507,6 +547,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         joinGroup,
         addGroup,
         tasks,
+        updateTask,
         moveTask,
         addTask,
         polls,

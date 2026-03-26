@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, ChevronRight, ChevronLeft, ArrowLeft, Tent } from 'lucide-react'
+import { Plus, ArrowLeft, Tent } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -10,7 +10,6 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,43 +23,20 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
-import useAppStore, { TaskStatus, GroupType } from '@/stores/useAppStore'
+import useAppStore, { GroupType, Task } from '@/stores/useAppStore'
 import { cn } from '@/lib/utils'
 
-const COLUMNS: { id: TaskStatus; title: string; color: string; headerColor: string }[] = [
-  {
-    id: 'todo',
-    title: 'A Fazer',
-    color: 'bg-orange-50/50 border-orange-200',
-    headerColor: 'bg-orange-100 text-orange-900 border-orange-200',
-  },
-  {
-    id: 'doing',
-    title: 'Em Progresso',
-    color: 'bg-yellow-50/50 border-yellow-200',
-    headerColor: 'bg-yellow-100 text-yellow-900 border-yellow-200',
-  },
-  {
-    id: 'done',
-    title: 'Concluído',
-    color: 'bg-green-50/50 border-green-200',
-    headerColor: 'bg-green-100 text-green-900 border-green-200',
-  },
-]
-
-const priorityColors: Record<string, string> = {
-  Alta: 'bg-red-100 text-red-800 border-red-200',
-  Média: 'bg-amber-100 text-amber-800 border-amber-200',
-  Baixa: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-}
+import MyTasksDashboard from '@/components/tasks/MyTasksDashboard'
+import TaskBoard from '@/components/tasks/TaskBoard'
+import TaskDetailDialog from '@/components/tasks/TaskDetailDialog'
 
 export default function Tasks() {
-  const { user, groups, joinGroup, tasks, moveTask, addTask, addGroup } = useAppStore()
+  const { user, groups, joinGroup, addGroup } = useAppStore()
   const { toast } = useToast()
 
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
-  const [newTaskTitle, setNewTaskTitle] = useState('')
-  const [newTaskPriority, setNewTaskPriority] = useState('Média')
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
 
   const [newGroupName, setNewGroupName] = useState('')
   const [newGroupDesc, setNewGroupDesc] = useState('')
@@ -72,12 +48,6 @@ export default function Tasks() {
   )
   const activeGroup = groups.find((g) => g.id === selectedGroupId)
 
-  const handleAdd = () => {
-    if (!newTaskTitle.trim() || !selectedGroupId) return
-    addTask(selectedGroupId, newTaskTitle, newTaskPriority)
-    setNewTaskTitle('')
-  }
-
   const handleCreateGroup = () => {
     if (!newGroupName.trim()) return
     addGroup({ name: newGroupName, description: newGroupDesc, type: newGroupType })
@@ -88,9 +58,22 @@ export default function Tasks() {
     toast({ title: 'Equipe Criada com Sucesso! 🤝' })
   }
 
+  const handleTaskClick = (task: Task) => {
+    setSelectedGroupId(task.groupId)
+    setSelectedTaskId(task.id)
+    setIsTaskModalOpen(true)
+  }
+
+  const openNewTask = () => {
+    setSelectedTaskId(null)
+    setIsTaskModalOpen(true)
+  }
+
   if (!selectedGroupId) {
     return (
-      <div className="space-y-8 animate-fade-in max-w-4xl mx-auto">
+      <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
+        <MyTasksDashboard onTaskClick={handleTaskClick} />
+
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-6 gap-4">
           <div>
             <h1 className="text-3xl font-black font-display text-foreground">Equipes de Apoio</h1>
@@ -232,7 +215,7 @@ export default function Tasks() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in h-full flex flex-col">
+    <div className="space-y-6 animate-fade-in h-full flex flex-col max-w-6xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 bg-white/80 p-4 rounded-2xl border border-amber-200 shadow-sm backdrop-blur-sm">
         <div className="flex items-center space-x-4">
           <Button
@@ -261,164 +244,28 @@ export default function Tasks() {
           </div>
         </div>
 
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="shrink-0 shadow-md transition-transform hover:scale-105 active:scale-95 font-bold rounded-xl h-11 px-6">
-              <Plus className="w-5 h-5 mr-2" /> Puxar Tarefa
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] border-amber-200">
-            <DialogHeader>
-              <DialogTitle className="font-display font-bold text-2xl">Nova Missão</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-5 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="title" className="font-bold">
-                  O que precisa ser feito?
-                </Label>
-                <Input
-                  id="title"
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder="Ex: Comprar carvão..."
-                  className="bg-orange-50/30 border-amber-200"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-bold">Prioridade</Label>
-                <Select value={newTaskPriority} onValueChange={setNewTaskPriority}>
-                  <SelectTrigger className="bg-orange-50/30 border-amber-200">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Baixa" className="font-medium text-emerald-700">
-                      Tranquilo (Baixa)
-                    </SelectItem>
-                    <SelectItem value="Média" className="font-medium text-amber-700">
-                      Importante (Média)
-                    </SelectItem>
-                    <SelectItem value="Alta" className="font-medium text-red-700">
-                      Urgente (Alta)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="ghost" className="font-bold">
-                  Cancelar
-                </Button>
-              </DialogClose>
-              <DialogClose asChild>
-                <Button onClick={handleAdd} className="font-bold shadow-md rounded-xl">
-                  Salvar Missão
-                </Button>
-              </DialogClose>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button
+          onClick={openNewTask}
+          className="shrink-0 shadow-md transition-transform hover:scale-105 active:scale-95 font-bold rounded-xl h-11 px-6"
+        >
+          <Plus className="w-5 h-5 mr-2" /> Puxar Tarefa
+        </Button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-[500px]">
-        {COLUMNS.map((col) => {
-          const colTasks = tasks.filter((t) => t.groupId === selectedGroupId && t.status === col.id)
-          return (
-            <div
-              key={col.id}
-              className={cn(
-                'flex-1 rounded-2xl border-2 flex flex-col overflow-hidden shadow-sm',
-                col.color,
-              )}
-            >
-              <div
-                className={cn(
-                  'px-4 py-3 border-b flex justify-between items-center',
-                  col.headerColor,
-                )}
-              >
-                <h3 className="font-black font-display tracking-wide uppercase text-sm">
-                  {col.title}
-                </h3>
-                <Badge variant="outline" className="bg-white/60 font-bold border-none shadow-sm">
-                  {colTasks.length}
-                </Badge>
-              </div>
-              <div className="p-3 flex-1 flex flex-col gap-3 overflow-y-auto min-h-[150px]">
-                {colTasks.length === 0 && (
-                  <div className="flex-1 flex items-center justify-center text-foreground/40 text-sm font-medium border-2 border-dashed border-current/20 rounded-xl m-2">
-                    Nenhuma tarefa aqui
-                  </div>
-                )}
-                {colTasks.map((task) => (
-                  <Card
-                    key={task.id}
-                    className="shadow-sm hover:shadow-md transition-all border-amber-200 group bg-white rounded-xl"
-                  >
-                    <CardContent className="p-4 flex flex-col gap-3">
-                      <div className="flex justify-between items-start gap-3">
-                        <span className="font-bold text-foreground text-sm leading-snug">
-                          {task.title}
-                        </span>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'text-[10px] uppercase font-black border shrink-0 py-0.5',
-                            priorityColors[task.priority],
-                          )}
-                        >
-                          {task.priority}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between mt-2 pt-3 border-t border-amber-50">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="w-7 h-7 border-2 border-white shadow-sm">
-                            <AvatarImage
-                              src={`https://img.usecurling.com/ppl/thumbnail?seed=${task.assignee}`}
-                            />
-                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
-                              {task.assignee[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs text-foreground/60 font-bold truncate max-w-[80px]">
-                            {task.assignee}
-                          </span>
-                        </div>
-                        <div className="flex gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                          {col.id !== 'todo' && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="w-8 h-8 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-lg"
-                              onClick={() =>
-                                moveTask(task.id, col.id === 'done' ? 'doing' : 'todo')
-                              }
-                            >
-                              <ChevronLeft className="w-4 h-4" />
-                            </Button>
-                          )}
-                          {col.id !== 'done' && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="w-8 h-8 bg-orange-50 hover:bg-primary hover:text-white text-primary rounded-lg transition-colors shadow-sm"
-                              onClick={() =>
-                                moveTask(task.id, col.id === 'todo' ? 'doing' : 'done')
-                              }
-                            >
-                              <ChevronRight className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )
-        })}
-      </div>
+      <TaskBoard
+        groupId={selectedGroupId}
+        onTaskClick={(taskId) => {
+          setSelectedTaskId(taskId)
+          setIsTaskModalOpen(true)
+        }}
+      />
+
+      <TaskDetailDialog
+        taskId={selectedTaskId}
+        groupId={selectedGroupId}
+        open={isTaskModalOpen}
+        onOpenChange={setIsTaskModalOpen}
+      />
     </div>
   )
 }
