@@ -102,6 +102,8 @@ export type EventDetails = {
   startDate: string
   endDate: string
   installments: InstallmentConfig[]
+  backgroundImage?: string
+  venuePhotos?: string[]
 }
 
 export type InstallmentConfig = {
@@ -155,6 +157,7 @@ type AppState = {
   updateGroup: (groupId: string, updates: Partial<Group>) => void
   deleteGroup: (groupId: string) => void
   leaveGroup: (groupId: string) => void
+  removeMemberFromGroup: (groupId: string, userId: string) => void
   tasks: Task[]
   updateTask: (id: string, updates: Partial<Task>) => void
   moveTask: (id: string, newStatus: TaskStatus) => void
@@ -170,6 +173,7 @@ type AppState = {
   eventDetails: EventDetails
   updateEventDetails: (details: Partial<EventDetails>) => void
   venuePhotos: string[]
+  updateVenuePhotos: (photos: string[]) => void
 
   dailyMenus: DailyMenu[]
   updateDailyMenus: (menus: DailyMenu[]) => void
@@ -400,9 +404,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       { id: '2', label: 'Parcela 2', dueDate: '2025-11-10' },
       { id: '3', label: 'Parcela 3', dueDate: '2025-12-10' },
     ],
+    backgroundImage: '',
   })
 
   const [venuePhotos, setVenuePhotos] = useState<string[]>([])
+  const [isAdmin, setIsAdmin] = useState(false)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
 
   // Auth Listener
@@ -435,10 +441,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             eventIds: ['farrao-2026'],
           }
           await db.updateUserProfile(firebaseUser.uid, profile)
-        } else if (isGod) {
           // Garante que o flag isSuperAdmin esteja no estado local mesmo se já tiver perfil
           profile.isSuperAdmin = true
         }
+        setIsAdmin(isGod)
         setUserState(profile)
       } else {
         setUserState(defaultUser)
@@ -455,8 +461,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubEvent = db.subscribeToEventDetails((data) => {
       if (data) {
         setEventDetails(data)
-        // Se venuePhotos, pricingTiers e beverageTotal estiverem no doc do evento
-        // Para simplificar, assumimos que estão espalhados, mas no appStore original eram separados.
+        if (data.venuePhotos) {
+          setVenuePhotos(data.venuePhotos)
+        }
       }
     })
 
@@ -466,10 +473,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     })
 
     // Escuta as coleções
-    const unsubUsers = (isGovernance || user.isSuperAdmin)
-      ? db.subscribeToAllEventUsers(setParticipants)
-      : db.subscribeToEventUser(user.id, (data) => setParticipants(data ? [data] : []))
-      
+    const unsubUsers = db.subscribeToAllEventUsers(setParticipants)
+
     const unsubGroups = db.subscribeToGroups(setGroups)
     const unsubTasks = db.subscribeToTasks(setTasks)
     const unsubPolls = db.subscribeToPolls(setPolls)
@@ -506,11 +511,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const group = groups.find((g) => g.id === groupId)
     if (group && !group.memberIds.includes(user.id)) {
       await db.updateGroup(groupId, { memberIds: [...group.memberIds, user.id] })
-      
+
       const myParticipant = participants.find(p => p.id === user.id)
       if (myParticipant) {
-        await db.updateEventUser(user.id, { 
-          groupIds: [...(myParticipant.groupIds || []), groupId] 
+        await db.updateEventUser(user.id, {
+          groupIds: [...(myParticipant.groupIds || []), groupId]
         })
       }
     }
@@ -533,16 +538,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (group && group.memberIds.includes(user.id)) {
       const newMemberIds = group.memberIds.filter((id) => id !== user.id)
       await db.updateGroup(groupId, { memberIds: newMemberIds })
-      
+
       const myParticipant = participants.find(p => p.id === user.id)
       if (myParticipant) {
-        await db.updateEventUser(user.id, { 
+        await db.updateEventUser(user.id, {
           groupIds: (myParticipant.groupIds || []).filter(id => id !== groupId)
         })
       }
-      
+
       // Unassign tasks from this group that are not done
       const groupTasks = tasks.filter((t) => t.groupId === groupId && t.assigneeId === user.id && t.status !== 'done')
+      for (const task of groupTasks) {
+        await db.updateTask(task.id, { assignee: '', assigneeId: '' })
+      }
+    }
+  }
+
+  const removeMemberFromGroup = async (groupId: string, userId: string) => {
+    const group = groups.find((g) => g.id === groupId)
+    if (group && group.memberIds.includes(userId)) {
+      const newMemberIds = group.memberIds.filter((id) => id !== userId)
+      await db.updateGroup(groupId, { memberIds: newMemberIds })
+
+      const targetParticipant = participants.find(p => p.id === userId)
+      if (targetParticipant) {
+        await db.updateEventUser(userId, {
+          groupIds: (targetParticipant.groupIds || []).filter(id => id !== groupId)
+        })
+      }
+
+      // Unassign tasks from this group that are not done for this user
+      const groupTasks = tasks.filter((t) => t.groupId === groupId && t.assigneeId === userId && t.status !== 'done')
       for (const task of groupTasks) {
         await db.updateTask(task.id, { assignee: '', assigneeId: '' })
       }
@@ -589,6 +615,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await db.updateEventDetails(details)
   }
 
+  const updateVenuePhotos = async (photos: string[]) => {
+    await db.updateEventDetails({ venuePhotos: photos } as any)
+    setVenuePhotos(photos)
+  }
+
   const updateDailyMenus = async (menus: DailyMenu[]) => {
     // Note: If menus are an array of documents, we handle them document by document. 
     // The original app states replaces the whole array. We will mock the replacement.
@@ -625,19 +656,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   )
 
   const isGovernance = useMemo(() => {
-    if (user.isSuperAdmin) return true
+    if (isAdmin || user.isSuperAdmin) return true
     const myParticipant = participants.find(p => p.id === user.id)
     if (!myParticipant) return false
 
     // Check if any of user's groups in this event are governance type
     const userGroupIds = myParticipant.groupIds || []
     return groups.some(g => userGroupIds.includes(g.id) && g.type === 'governance')
-  }, [user.id, user.isSuperAdmin, participants, groups])
+  }, [user.id, user.isSuperAdmin, isAdmin, participants, groups])
 
   const userWithGovernance = useMemo(() => ({
     ...user,
+    isSuperAdmin: isAdmin || user.isSuperAdmin,
     isGovernance
-  }), [user, isGovernance])
+  }), [user, isAdmin, isGovernance])
 
   return (
     <AppContext.Provider
@@ -657,6 +689,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateGroup,
         deleteGroup,
         leaveGroup,
+        removeMemberFromGroup,
         tasks,
         updateTask,
         moveTask,
@@ -671,6 +704,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         eventDetails,
         updateEventDetails,
         venuePhotos,
+        updateVenuePhotos,
         dailyMenus,
         updateDailyMenus,
         shoppingItems,

@@ -11,8 +11,9 @@ import {
   onSnapshot,
   addDoc,
 } from 'firebase/firestore'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, User, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
-import { db, auth } from './config'
+import { db, auth, storage } from './config'
 import type { 
   UserProfile, 
   ParticipantRecord, 
@@ -109,18 +110,18 @@ export const updateEventDetails = async (data: Partial<EventDetails>) => {
 
 // --- EVENT USERS (INSCRICAO) ---
 export const subscribeToEventUser = (userId: string, callback: (data: ParticipantRecord | null) => void) => {
-  return onSnapshot(doc(db, 'events', EVENT_ID, 'users', userId), (docSnap) => {
+  return onSnapshot(doc(db, 'events', EVENT_ID, 'participants', userId), (docSnap) => {
     callback(docSnap.exists() ? ({ id: docSnap.id, ...docSnap.data() } as ParticipantRecord) : null)
   })
 }
 
 export const updateEventUser = async (userId: string, data: Partial<ParticipantRecord>) => {
-  const docRef = doc(db, 'events', EVENT_ID, 'users', userId)
+  const docRef = doc(db, 'events', EVENT_ID, 'participants', userId)
   await setDoc(docRef, data, { merge: true })
 }
 
 export const subscribeToAllEventUsers = (callback: (data: ParticipantRecord[]) => void) => {
-  return onSnapshot(collection(db, 'events', EVENT_ID, 'users'), (snapshot) => {
+  return onSnapshot(collection(db, 'events', EVENT_ID, 'participants'), (snapshot) => {
     callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ParticipantRecord)))
   })
 }
@@ -229,4 +230,16 @@ export const updateMenu = async (menuId: string, data: Partial<DailyMenu>) => {
 
 export const addMenu = async (data: Omit<DailyMenu, 'id'>) => {
   await addDoc(collection(db, 'events', EVENT_ID, 'menus'), data)
+}
+
+// --- STORAGE ---
+export const uploadStorageFile = async (path: string, file: File) => {
+  const fileRef = ref(storage, path)
+  await uploadBytes(fileRef, file)
+  return await getDownloadURL(fileRef)
+}
+
+export const uploadVenuePhoto = async (file: File) => {
+  const path = `events/${EVENT_ID}/venue_photos/${Date.now()}_${file.name}`
+  return await uploadStorageFile(path, file)
 }

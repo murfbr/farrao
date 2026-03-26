@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, ArrowLeft, Tent, Pencil, Trash2, Check, X as CloseIcon } from 'lucide-react'
+import { Plus, ArrowLeft, Tent, Pencil, Trash2, Check, Users, X as CloseIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -34,14 +34,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import useAppStore, { GroupType, Task } from '@/stores/useAppStore'
-import { cn } from '@/lib/utils'
+import { cn, getInitials } from '@/lib/utils'
 
 import MyTasksDashboard from '@/components/tasks/MyTasksDashboard'
 import TaskBoard from '@/components/tasks/TaskBoard'
 import TaskDetailDialog from '@/components/tasks/TaskDetailDialog'
 
 export default function Tasks() {
-  const { user, groups, joinGroup, addGroup, updateGroup, deleteGroup, leaveGroup } = useAppStore()
+  const { user, groups, joinGroup, addGroup, updateGroup, deleteGroup, leaveGroup, removeMemberFromGroup, participants } = useAppStore()
   const { toast } = useToast()
 
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
@@ -53,15 +53,19 @@ export default function Tasks() {
   const [newGroupEmoji, setNewGroupEmoji] = useState('🤝')
   const [newGroupType, setNewGroupType] = useState<GroupType>('general')
   const [openGroupAdd, setOpenGroupAdd] = useState(false)
+  const [isParticipantsDialogOpen, setIsParticipantsDialogOpen] = useState(false)
 
   const [isEditingDesc, setIsEditingDesc] = useState(false)
   const [editDescValue, setEditDescValue] = useState('')
+  const [isEditingEmoji, setIsEditingEmoji] = useState(false)
+  const [editEmojiValue, setEditEmojiValue] = useState('🤝')
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const availableGroups = groups.filter(
     (g) => g.type === 'general' || g.memberIds.includes(user.id) || user.isGovernance,
   )
   const activeGroup = groups.find((g) => g.id === selectedGroupId)
+  const activeGroupMembers = participants.filter(p => activeGroup?.memberIds.includes(p.id))
 
   const handleCreateGroup = () => {
     if (!newGroupName.trim()) return
@@ -84,6 +88,13 @@ export default function Tasks() {
     updateGroup(selectedGroupId, { description: editDescValue })
     setIsEditingDesc(false)
     toast({ title: 'Descrição atualizada! ✨' })
+  }
+
+  const handleUpdateEmoji = () => {
+    if (!selectedGroupId) return
+    updateGroup(selectedGroupId, { emoji: editEmojiValue })
+    setIsEditingEmoji(false)
+    toast({ title: 'Emoji da equipe atualizado! ✨' })
   }
 
   const handleDeleteGroup = () => {
@@ -219,9 +230,11 @@ export default function Tasks() {
                       {group.memberIds.slice(0, 4).map((id, i) => (
                         <Avatar key={i} className="w-8 h-8 border-2 border-white">
                           <AvatarImage
-                            src={`https://img.usecurling.com/ppl/thumbnail?seed=${id}`}
+                            src={undefined}
                           />
-                          <AvatarFallback className="bg-primary/20 text-xs">U</AvatarFallback>
+                          <AvatarFallback className="bg-primary/20 text-xs">
+                            {getInitials(participants.find(p => p.id === id)?.name || 'U')}
+                          </AvatarFallback>
                         </Avatar>
                       ))}
                     </div>
@@ -240,11 +253,15 @@ export default function Tasks() {
                     )}
                     variant={isMember ? 'default' : 'outline'}
                     onClick={() => {
-                      if (!isMember) joinGroup(group.id)
-                      setSelectedGroupId(group.id)
+                      if (isMember) {
+                        setSelectedGroupId(group.id)
+                      } else {
+                        joinGroup(group.id)
+                        toast({ title: 'Você agora faz parte desta equipe! 🤝' })
+                      }
                     }}
                   >
-                    {isMember ? 'Ver Tarefas da Galera' : 'Entrar na Equipe'}
+                    {isMember ? 'Ver Tarefas' : 'Participar da Equipe'}
                   </Button>
                 </CardContent>
               </Card>
@@ -269,7 +286,59 @@ export default function Tasks() {
           </Button>
           <div>
             <div className="flex items-center space-x-3">
-              <span className="text-3xl">{activeGroup?.emoji || '🤝'}</span>
+              {user.isSuperAdmin ? (
+                <Dialog open={isEditingEmoji} onOpenChange={setIsEditingEmoji}>
+                  <DialogTrigger asChild>
+                    <button 
+                      className="text-3xl hover:scale-110 transition-transform cursor-pointer" 
+                      title="Mudar Emoji"
+                      onClick={() => setEditEmojiValue(activeGroup?.emoji || '🤝')}
+                    >
+                      {activeGroup?.emoji || '🤝'}
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px] border-amber-200">
+                    <DialogHeader>
+                      <DialogTitle className="font-display font-black text-2xl">
+                        Mudar Emoji da Equipe
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="flex gap-2 flex-wrap">
+                        {['🤝', '🍖', '🍻', '🎸', '⚽', '🏊', '⛺', '🔥', '🚗', '🧹'].map((emo) => (
+                          <Button
+                            key={emo}
+                            variant={editEmojiValue === emo ? 'default' : 'outline'}
+                            className={cn(
+                              "w-10 h-10 p-0 text-xl rounded-xl",
+                              editEmojiValue === emo ? "bg-primary" : "bg-orange-50/30 border-amber-200"
+                            )}
+                            onClick={() => setEditEmojiValue(emo)}
+                          >
+                            {emo}
+                          </Button>
+                        ))}
+                        <Input
+                          value={editEmojiValue}
+                          onChange={(e) => setEditEmojiValue(e.target.value)}
+                          placeholder="Emoji"
+                          className="w-16 h-10 bg-orange-50/30 border-amber-200 text-center text-xl"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        onClick={handleUpdateEmoji}
+                        className="font-bold rounded-xl shadow-md w-full"
+                      >
+                        Salvar Emoji
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              ) : (
+                <span className="text-3xl">{activeGroup?.emoji || '🤝'}</span>
+              )}
               <h1 className="text-2xl font-black font-display text-foreground">
                 {activeGroup?.name}
               </h1>
@@ -350,6 +419,15 @@ export default function Tasks() {
             </Button>
           )}
           <Button
+            variant="outline"
+            size="icon"
+            className="rounded-xl w-11 h-11 border-blue-100 text-blue-500 hover:bg-blue-50 hover:text-blue-600 mr-2"
+            onClick={() => setIsParticipantsDialogOpen(true)}
+            title="Membros da Equipe"
+          >
+            <Users className="w-5 h-5" />
+          </Button>
+          <Button
             onClick={openNewTask}
             className="shrink-0 shadow-md transition-transform hover:scale-105 active:scale-95 font-bold rounded-xl h-11 px-6"
           >
@@ -379,6 +457,51 @@ export default function Tasks() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={isParticipantsDialogOpen} onOpenChange={setIsParticipantsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] rounded-2xl border-amber-200">
+          <DialogHeader>
+            <DialogTitle className="font-display font-black text-2xl flex items-center">
+              <Users className="w-6 h-6 mr-2 text-primary" /> Membros da Equipe
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            {activeGroupMembers.length === 0 ? (
+              <p className="text-center text-foreground/50 py-8 font-medium">Nenhum membro nesta equipe ainda.</p>
+            ) : (
+              activeGroupMembers.map((member) => (
+                <div key={member.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-orange-50/50 transition-colors border border-transparent hover:border-amber-100">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10 border-2 border-white shadow-sm shrink-0">
+                      <AvatarImage src={undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-bold">{getInitials(member.name)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm truncate">{member.name}</p>
+                      <p className="text-[10px] text-foreground/40 font-bold uppercase tracking-wider">{member.members.length} {member.members.length === 1 ? 'pessoa' : 'pessoas'}</p>
+                    </div>
+                  </div>
+                  {user.isSuperAdmin && member.id !== user.id && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg h-8 w-8 shrink-0"
+                      onClick={() => {
+                        if (window.confirm(`Remover ${member.name} desta equipe? Todas as tarefas desta pessoa nesta equipe serão desatribuídas.`)) {
+                          removeMemberFromGroup(activeGroup!.id, member.id)
+                          toast({ title: 'Membro removido da equipe.' })
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <TaskBoard
         groupId={selectedGroupId}

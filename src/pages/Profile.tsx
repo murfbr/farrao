@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Save, Camera, Users, HandPlatter, X, Plus, Calendar } from 'lucide-react'
 import {
   Card,
@@ -15,6 +15,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ImageUploader } from '@/components/ui/image-uploader'
 import {
   Select,
   SelectContent,
@@ -23,12 +24,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
+import { getInitials } from '@/lib/utils'
 import useAppStore, { MemberCategory } from '@/stores/useAppStore'
 
 export default function Profile() {
-  const { user, setUser } = useAppStore()
+  const { user, setUser, updateParticipant } = useAppStore()
   const { toast } = useToast()
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({ ...user })
 
@@ -67,19 +68,28 @@ export default function Profile() {
     }))
   }
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const url = URL.createObjectURL(e.target.files[0])
-      handleChange('photoUrl', url)
-    }
-  }
 
-  const handleSave = () => {
-    setUser(formData)
-    toast({
-      title: 'Galera atualizada! 🎉',
-      description: 'As informações da sua galera foram salvas com sucesso.',
-    })
+  const handleSave = async () => {
+    try {
+      await setUser(formData)
+      await updateParticipant(user.id, {
+        name: formData.name,
+        members: formData.members,
+        daysAttending: formData.daysAttending,
+        hasConfirmed: formData.hasConfirmed,
+      })
+      
+      toast({
+        title: 'Galera atualizada! 🎉',
+        description: 'As informações da sua galera foram salvas com sucesso.',
+      })
+    } catch (error) {
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Não foi possível salvar as informações. Tente novamente.',
+        variant: 'destructive',
+      })
+    }
   }
 
   return (
@@ -125,34 +135,26 @@ export default function Profile() {
           <div className="flex flex-col sm:flex-row items-center sm:space-x-8 space-y-4 sm:space-y-0">
             <Avatar className="w-24 h-24 border-4 border-white shadow-xl">
               <AvatarImage
-                src={
-                  formData.photoUrl ||
-                  `https://img.usecurling.com/ppl/thumbnail?seed=${formData.name}`
-                }
+                src={formData.photoUrl}
                 className="object-cover"
               />
               <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
-                {formData.name.charAt(0)}
+                {getInitials(formData.name)}
               </AvatarFallback>
             </Avatar>
             <div className="space-y-3 flex flex-col items-center sm:items-start text-center sm:text-left">
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={handlePhotoUpload}
+              <ImageUploader
+                onUploadSuccess={(url) => handleChange('photoUrl', url)}
+                storagePath={(file) => `users/${user.id}/profile_${Date.now()}_${file.name}`}
+                maxSizeMB={0.1}
+                maxWidthOrHeight={500}
+                buttonContent={<><Camera className="w-4 h-4 mr-2" /> Escolher Foto Top</>}
+                buttonVariant="outline"
+                buttonSize="sm"
+                buttonClassName="border-primary/20 hover:bg-primary/5 text-primary font-bold"
               />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                className="border-primary/20 hover:bg-primary/5 text-primary font-bold"
-              >
-                <Camera className="w-4 h-4 mr-2" /> Escolher Foto Top
-              </Button>
               <p className="text-xs font-bold text-foreground/40 uppercase tracking-widest">
-                JPG, PNG. Max 5MB.
+                JPG, PNG. Foto otimizada.
               </p>
             </div>
           </div>

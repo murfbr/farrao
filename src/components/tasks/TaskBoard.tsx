@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { CheckSquare, Paperclip, Link as LinkIcon } from 'lucide-react'
 import useAppStore, { Task, TaskStatus } from '@/stores/useAppStore'
-import { cn } from '@/lib/utils'
+import { cn, getInitials } from '@/lib/utils'
 
 const COLUMNS: { id: TaskStatus; title: string; color: string; headerColor: string }[] = [
   {
@@ -88,10 +88,10 @@ function TaskCard({
           <div className="flex items-center gap-2">
             <Avatar className="w-7 h-7 border-2 border-white shadow-sm">
               <AvatarImage
-                src={`https://img.usecurling.com/ppl/thumbnail?seed=${task.assigneeId || task.assignee}`}
+                src={undefined}
               />
               <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
-                {task.assignee?.[0]}
+                {getInitials(task.assignee || 'U')}
               </AvatarFallback>
             </Avatar>
             <span className="text-xs text-foreground/60 font-bold truncate max-w-[100px]">

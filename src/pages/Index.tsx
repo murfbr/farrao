@@ -13,6 +13,12 @@ import {
   MessageSquarePlus,
   CheckCircle2,
   Pencil,
+  Plus,
+  Trash2,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  X,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -41,6 +47,7 @@ import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/hooks/use-toast'
 import useAppStore from '@/stores/useAppStore'
 import { cn } from '@/lib/utils'
+import { ImageUploader } from '@/components/ui/image-uploader'
 
 export default function Index() {
   const {
@@ -54,6 +61,7 @@ export default function Index() {
     eventDetails,
     updateEventDetails,
     venuePhotos,
+    updateVenuePhotos,
   } = useAppStore()
   const { toast } = useToast()
 
@@ -64,6 +72,8 @@ export default function Index() {
 
   const [isEditEventOpen, setIsEditEventOpen] = useState(false)
   const [editForm, setEditForm] = useState(eventDetails)
+
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null)
 
   const activeAnnouncements = announcements
     .filter((a) => !a.archived)
@@ -106,7 +116,45 @@ export default function Index() {
     toast({ title: 'Informações do evento atualizadas! ✅' })
   }
 
-  const targetDate = new Date(eventDetails.startDate || eventDetails.targetDate)
+  const handleDeletePhoto = async (photoUrl: string) => {
+    try {
+      const newPhotos = venuePhotos.filter((p) => p !== photoUrl)
+      await updateVenuePhotos(newPhotos)
+      toast({ title: 'Foto removida! 🗑️' })
+    } catch (error) {
+      toast({
+        title: 'Erro ao remover ❌',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handlePrevPhoto = (e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    setSelectedPhotoIndex((prev) =>
+      prev !== null ? (prev - 1 + venuePhotos.length) % venuePhotos.length : null,
+    )
+  }
+
+  const handleNextPhoto = (e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    setSelectedPhotoIndex((prev) => (prev !== null ? (prev + 1) % venuePhotos.length : null))
+  }
+
+  const formatDateDisplay = (dateStr: string) => {
+    if (!dateStr) return ''
+    const [year, month, day] = dateStr.split('-').map(Number)
+    return new Date(year, month - 1, day).toLocaleDateString('pt-BR')
+  }
+
+  const targetDate = eventDetails.startDate || eventDetails.targetDate
+    ? (() => {
+        const [y, m, d] = (eventDetails.startDate || eventDetails.targetDate)
+          .split('-')
+          .map(Number)
+        return new Date(y, m - 1, d)
+      })()
+    : new Date()
   const today = new Date()
   today.setHours(0, 0, 0, 0) // Normalize today to the start of the day
   const diffDays = Math.ceil(
@@ -171,6 +219,15 @@ export default function Index() {
                 className="bg-orange-50/30 border-amber-200 font-medium"
               />
             </div>
+            <div className="space-y-2">
+              <Label className="font-bold">Imagem de Fundo (URL)</Label>
+              <Input
+                value={editForm.backgroundImage}
+                onChange={(e) => setEditForm({ ...editForm, backgroundImage: e.target.value })}
+                placeholder="https://exemplo.com/foto.jpg"
+                className="bg-orange-50/30 border-amber-200 font-medium"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -212,7 +269,18 @@ export default function Index() {
         </div>
       )}
 
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-orange-500 to-rose-500 text-white p-8 md:p-12 shadow-xl shadow-primary/20">
+      <div 
+        className={cn(
+          "relative overflow-hidden rounded-3xl p-8 md:p-12 shadow-xl shadow-primary/20 transition-all duration-500",
+          !eventDetails.backgroundImage && "bg-gradient-to-br from-primary via-orange-500 to-rose-500 text-white"
+        )}
+        style={eventDetails.backgroundImage ? {
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5)), url(${eventDetails.backgroundImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          color: 'white'
+        } : {}}
+      >
         <div className="absolute top-0 right-0 opacity-20 pointer-events-none -translate-y-10 translate-x-10">
           <Guitar className="w-64 h-64 rotate-12" />
         </div>
@@ -252,8 +320,8 @@ export default function Index() {
                 <Calendar className="w-5 h-5 text-white" />
               </div>
               <span>
-                {eventDetails.startDate ? new Date(eventDetails.startDate).toLocaleDateString('pt-BR') : eventDetails.date}
-                {eventDetails.endDate && ` até ${new Date(eventDetails.endDate).toLocaleDateString('pt-BR')}`}
+                {eventDetails.startDate ? formatDateDisplay(eventDetails.startDate) : eventDetails.date}
+                {eventDetails.endDate && ` até ${formatDateDisplay(eventDetails.endDate)}`}
               </span>
             </div>
             <div className="hidden sm:block w-px bg-white/20" />
@@ -593,22 +661,92 @@ export default function Index() {
       <div className="mt-12 space-y-5 border-t border-amber-100 pt-8">
         <div className="flex items-center justify-between">
           <h3 className="text-2xl font-black font-display text-foreground">Galeria do Local</h3>
+          {user.isGovernance && (
+            <div className="flex items-center gap-2">
+              <ImageUploader
+                onUploadSuccess={async (url) => {
+                  await updateVenuePhotos([...venuePhotos, url])
+                }}
+                storagePath={(file) => `events/farrao-2026/venue_photos/${Date.now()}_${file.name}`}
+                maxSizeMB={1}
+                maxWidthOrHeight={1280}
+                buttonContent={<><Plus className="w-4 h-4 mr-2" /> Adicionar Foto</>}
+                buttonSize="sm"
+                buttonClassName="font-bold rounded-xl shadow-md h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
+              />
+            </div>
+          )}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {venuePhotos.map((photo, i) => (
             <div
               key={i}
-              className="aspect-square rounded-2xl overflow-hidden shadow-sm border border-amber-100 group cursor-pointer relative bg-orange-50/50"
+              className="aspect-square rounded-2xl overflow-hidden shadow-sm border border-amber-100 group relative bg-orange-50/50 cursor-pointer"
+              onClick={() => setSelectedPhotoIndex(i)}
             >
               <img
                 src={photo}
                 alt={`Foto do local ${i + 1}`}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+              
+              {user.isGovernance && (
+                <button
+                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-md z-10"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDeletePhoto(photo)
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ))}
         </div>
+
+        {/* Lightbox Dialog */}
+        <Dialog open={selectedPhotoIndex !== null} onOpenChange={(open) => !open && setSelectedPhotoIndex(null)}>
+          <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-transparent shadow-none flex items-center justify-center">
+            <div className="relative group flex items-center justify-center w-full h-full">
+              {selectedPhotoIndex !== null && (
+                <>
+                  <img
+                    src={venuePhotos[selectedPhotoIndex]}
+                    alt="Foto do local expandida"
+                    className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                  />
+                  
+                  {venuePhotos.length > 1 && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full h-12 w-12 border-none opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={handlePrevPhoto}
+                      >
+                        <ChevronLeft className="w-8 h-8" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full h-12 w-12 border-none opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={handleNextPhoto}
+                      >
+                        <ChevronRight className="w-8 h-8" />
+                      </Button>
+                    </>
+                  )}
+                  
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/40 px-4 py-2 rounded-full text-white font-bold backdrop-blur-md text-sm">
+                    {selectedPhotoIndex + 1} / {venuePhotos.length}
+                  </div>
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

@@ -94,7 +94,7 @@ export default function Finance() {
   )
 
   const calculateBaseFee = (p: ParticipantRecord) => {
-    if (p.socialQuotaOverride !== null) return p.socialQuotaOverride
+    if (typeof p.socialQuotaOverride === 'number') return p.socialQuotaOverride
     const adults = p.members.filter((m) => m.category === 'adult').length
     const child10 = p.members.filter((m) => m.category === 'child_under_10').length
     const child16 = p.members.filter((m) => m.category === 'child_11_to_16').length
@@ -123,7 +123,7 @@ export default function Finance() {
     const rows = participants
       .map((p) => {
         const installmentStatuses = eventDetails.installments
-          .map((inst) => p.payments[inst.id] || 'pending')
+          .map((inst) => (p.payments?.[inst.id] || 'pending'))
           .join(',')
         return `${p.name},${installmentStatuses},${p.beverageStatus},${p.members.length},${calculateBaseFee(
           p,
@@ -156,7 +156,7 @@ export default function Finance() {
     if (!p) return
     const nextStatus = current === 'paid' ? 'pending' : current === 'pending' ? 'late' : 'paid'
     updateParticipant(id, {
-      payments: { ...p.payments, [installmentId]: nextStatus as FinanceStatus },
+      payments: { ...(p.payments || {}), [installmentId]: nextStatus as FinanceStatus },
     })
   }
 
@@ -209,7 +209,7 @@ export default function Finance() {
                 <Users className="w-4 h-4 mr-2" /> Hospedagem / Festa
               </span>
               <span className="font-bold text-lg">
-                R$ {myBaseFee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {(myBaseFee || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex justify-between items-center border-b border-amber-100 pb-3">
@@ -217,7 +217,7 @@ export default function Finance() {
                 <Beer className="w-4 h-4 mr-2 text-emerald-600" /> Bebidas (Chopp)
               </span>
               <span className="font-bold text-lg text-emerald-600">
-                R$ {myBeverageFee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {(myBeverageFee || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
             </div>
             <div className="mt-auto pt-6">
@@ -227,7 +227,7 @@ export default function Finance() {
                 </p>
                 <p className="text-3xl font-black font-display text-primary text-center">
                   R$ {' '}
-                  {(myBaseFee + myBeverageFee).toLocaleString('pt-BR', {
+                  {((myBaseFee || 0) + (myBeverageFee || 0)).toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
                   })}
                 </p>
@@ -274,7 +274,7 @@ export default function Finance() {
                       </TableCell>
                       {eventDetails.installments.map((inst) => (
                         <TableCell key={inst.id}>
-                          {getStatusIcon(p.payments[inst.id] || 'pending', inst.dueDate)}
+                          {getStatusIcon(p.payments?.[inst.id] || 'pending', inst.dueDate)}
                         </TableCell>
                       ))}
                     </TableRow>
@@ -479,10 +479,10 @@ export default function Finance() {
                     {eventDetails.installments.map((inst) => (
                       <TableCell key={inst.id} className="text-center">
                         <button
-                          onClick={() => toggleStatus(p.id, inst.id, p.payments[inst.id] || 'pending')}
+                          onClick={() => toggleStatus(p.id, inst.id, p.payments?.[inst.id] || 'pending')}
                           className="p-2 hover:scale-110 hover:bg-orange-100 rounded-xl transition-all"
                         >
-                          {getStatusIcon(p.payments[inst.id] || 'pending', inst.dueDate)}
+                          {getStatusIcon(p.payments?.[inst.id] || 'pending', inst.dueDate)}
                         </button>
                       </TableCell>
                     ))}
@@ -510,7 +510,7 @@ export default function Finance() {
                       />
                     </TableCell>
                     <TableCell className="text-right font-black text-base text-primary pr-6">
-                      R$ {calculateBaseFee(p).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {(calculateBaseFee(p) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </TableCell>
                   </TableRow>
                 )
@@ -554,7 +554,7 @@ export default function Finance() {
                   Custo Total Estimado
                 </p>
                 <p className="text-3xl font-black text-emerald-800">
-                  R$ {beverageTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {(beverageTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>
               </div>
             )}
@@ -566,7 +566,7 @@ export default function Finance() {
               <div className="bg-white p-4 rounded-xl border border-emerald-100 text-center flex-1 md:px-6 shadow-sm">
                 <p className="text-xs font-bold text-emerald-600/70 uppercase mb-1">Custo / Dia</p>
                 <p className="text-2xl font-black text-emerald-600">
-                  R$ {beveragePerDay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {(beveragePerDay || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>
               </div>
             </div>
@@ -610,8 +610,8 @@ export default function Finance() {
                       )}
                     </TableCell>
                     <TableCell className="text-right font-black text-lg text-emerald-600 pr-6">
-                      R${' '}
-                      {calculateBeverageFee(p).toLocaleString('pt-BR', {
+                      R$ {' '}
+                      {(calculateBeverageFee(p) || 0).toLocaleString('pt-BR', {
                         minimumFractionDigits: 2,
                       })}
                     </TableCell>

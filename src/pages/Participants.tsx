@@ -26,23 +26,28 @@ export default function Participants() {
   const { participants, user, eventDetails } = useAppStore()
   const [filter, setFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
+  const [confirmationFilter, setConfirmationFilter] = useState<string>('all')
 
-  const confirmedParticipants = participants.filter((p) => p.hasConfirmed)
-  const allMembers = confirmedParticipants.flatMap((p) =>
+  const allMembers = participants.flatMap((p) =>
     p.members.map((m) => ({
       ...m,
       familyName: p.name,
       payments: p.payments,
       beverageStatus: p.beverageStatus,
+      hasConfirmed: p.hasConfirmed,
     })),
   )
 
   const filteredMembers = allMembers.filter((m) => {
-    const matchesFilter = filter === 'all' || m.category === filter
+    const matchesCategory = filter === 'all' || m.category === filter
+    const matchesConfirmation =
+      confirmationFilter === 'all' ||
+      (confirmationFilter === 'confirmed' && m.hasConfirmed) ||
+      (confirmationFilter === 'unconfirmed' && !m.hasConfirmed)
     const matchesSearch =
       m.name.toLowerCase().includes(search.toLowerCase()) ||
       m.familyName.toLowerCase().includes(search.toLowerCase())
-    return matchesFilter && matchesSearch
+    return matchesCategory && matchesConfirmation && matchesSearch
   })
 
   const categoryLabels: Record<MemberCategory, string> = {
@@ -92,7 +97,7 @@ export default function Participants() {
           <Users className="w-8 h-8 mr-3 text-primary" /> A Lista
         </h1>
         <p className="text-foreground/60 text-base mt-2 font-medium">
-          Diretório completo de todos os convidados confirmados para o Farrão.
+          Diretório completo de todos os convidados cadastrados para o Farrão.
         </p>
       </div>
 
@@ -113,16 +118,7 @@ export default function Participants() {
             </span>
           </CardContent>
         </Card>
-        <Card className="bg-emerald-50/50 border-emerald-100 shadow-sm">
-          <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-            <span className="text-3xl font-black text-emerald-600 font-display">
-              {stats.drinking}
-            </span>
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600/60 mt-1">
-              Chopp
-            </span>
-          </CardContent>
-        </Card>
+
         <Card className="bg-purple-50/50 border-purple-100 shadow-sm">
           <CardContent className="p-4 flex flex-col items-center justify-center text-center">
             <span className="text-3xl font-black text-purple-600 font-display">{stats.kids}</span>
@@ -155,15 +151,26 @@ export default function Participants() {
           <div className="flex items-center space-x-2 w-full md:w-auto">
             <Filter className="w-4 h-4 text-primary" />
             <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger className="w-full md:w-[180px] bg-white border-amber-200">
-                <SelectValue placeholder="Filtrar categoria" />
+              <SelectTrigger className="w-full md:w-[160px] bg-white border-amber-200">
+                <SelectValue placeholder="Categoria" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="all">Todas Categorias</SelectItem>
                 <SelectItem value="adult">Adultos</SelectItem>
                 <SelectItem value="child_under_10">Crianças (&lt;10)</SelectItem>
                 <SelectItem value="child_11_to_16">Crianças (11-16)</SelectItem>
                 <SelectItem value="nanny">Staff / Babás</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={confirmationFilter} onValueChange={setConfirmationFilter}>
+              <SelectTrigger className="w-full md:w-[160px] bg-white border-amber-200">
+                <SelectValue placeholder="Confirmação" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos Status</SelectItem>
+                <SelectItem value="confirmed">Confirmados</SelectItem>
+                <SelectItem value="unconfirmed">Não Confirmados</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -175,6 +182,7 @@ export default function Participants() {
                 <TableHead className="font-bold text-foreground">Nome Completo</TableHead>
                 <TableHead className="font-bold text-foreground">Família Representante</TableHead>
                 <TableHead className="font-bold text-foreground">Categoria</TableHead>
+                <TableHead className="text-center font-bold text-foreground">Confirmado</TableHead>
                 <TableHead className="text-center font-bold text-foreground">
                   Pacote Bebida
                 </TableHead>
@@ -192,7 +200,7 @@ export default function Participants() {
               {filteredMembers.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={user.isGovernance ? 5 : 4}
+                    colSpan={user.isGovernance ? 6 : 5}
                     className="h-32 text-center text-foreground/50 font-medium"
                   >
                     Nenhum participante encontrado.
@@ -218,6 +226,17 @@ export default function Participants() {
                       >
                         {categoryLabels[m.category]}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {m.hasConfirmed ? (
+                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">
+                          Sim
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-slate-400 border-slate-200">
+                          Não
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-center">
                       {m.isDrinking && m.category === 'adult' ? (

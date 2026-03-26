@@ -12,7 +12,7 @@ import {
   KeyRound,
   Vote,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getInitials } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -118,12 +118,10 @@ export default function Layout() {
             <Link to="/profile">
               <Avatar className="w-10 h-10 border-2 border-white shadow-md cursor-pointer hover:scale-105 transition-transform">
                 <AvatarImage
-                  src={
-                    user.photoUrl || `https://img.usecurling.com/ppl/thumbnail?seed=${user.name}`
-                  }
+                  src={user.photoUrl}
                 />
                 <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                  {user.name.charAt(0)}
+                  {getInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
             </Link>
