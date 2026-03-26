@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,14 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { Trash, Plus, Link as LinkIcon, Image as ImageIcon, CheckSquare } from 'lucide-react'
+import {
+  Trash,
+  Plus,
+  Link as LinkIcon,
+  Image as ImageIcon,
+  CheckSquare,
+  Upload,
+} from 'lucide-react'
 import useAppStore, { Task, TaskStatus } from '@/stores/useAppStore'
 import RichTextEditor from './RichTextEditor'
 import { cn } from '@/lib/utils'
@@ -39,6 +46,7 @@ export default function TaskDetailDialog({
   const [newItem, setNewItem] = useState('')
   const [newLink, setNewLink] = useState('')
   const [newImg, setNewImg] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) {
@@ -101,18 +109,35 @@ export default function TaskDetailDialog({
   }
   const removeLink = (l: string) =>
     setData((p) => ({ ...p, links: p.links?.filter((x) => x !== l) }))
+
   const addImg = () => {
     if (newImg.trim()) {
       setData((p) => ({ ...p, images: [...(p.images || []), newImg] }))
       setNewImg('')
     }
   }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const result = event.target?.result as string
+      if (result) {
+        setData((p) => ({ ...p, images: [...(p.images || []), result] }))
+      }
+    }
+    reader.readAsDataURL(file)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const removeImg = (img: string) =>
     setData((p) => ({ ...p, images: p.images?.filter((x) => x !== img) }))
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] border-amber-200 max-h-[90vh] flex flex-col p-0 overflow-hidden bg-orange-50/10">
+      <DialogContent className="sm:max-w-[600px] border-amber-200 max-h-[90vh] flex flex-col p-0 overflow-hidden bg-white">
         <DialogHeader className="p-6 pb-4 border-b border-amber-100 bg-white">
           <DialogTitle className="font-display font-black text-2xl">
             {taskId ? 'Detalhes da Missão' : 'Nova Missão'}
@@ -292,7 +317,7 @@ export default function TaskDetailDialog({
           </div>
           <div className="space-y-2">
             <Label className="font-bold flex items-center gap-2 text-xs uppercase tracking-wider text-foreground/60">
-              <ImageIcon className="w-4 h-4" /> Imagens (URLs)
+              <ImageIcon className="w-4 h-4" /> Imagens
             </Label>
             <div className="flex gap-2">
               <Input
@@ -302,15 +327,30 @@ export default function TaskDetailDialog({
                 onKeyDown={(e) => e.key === 'Enter' && addImg()}
                 className="bg-white"
               />
-              <Button onClick={addImg}>
+              <Button onClick={addImg} variant="secondary" title="Adicionar por URL">
                 <Plus className="w-5 h-5" />
+              </Button>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+              />
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                title="Fazer Upload do Dispositivo"
+                className="shrink-0"
+              >
+                <Upload className="w-5 h-5" />
               </Button>
             </div>
             {data.images?.length ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2">
-                {data.images.map((img) => (
+                {data.images.map((img, idx) => (
                   <div
-                    key={img}
+                    key={`${img}-${idx}`}
                     className="relative group rounded-xl overflow-hidden border-2 border-amber-200 aspect-video bg-amber-50 shadow-sm"
                   >
                     <img src={img} alt="Attachment" className="w-full h-full object-cover" />
