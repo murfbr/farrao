@@ -36,7 +36,7 @@ npm start
 npm run dev
 ```
 
-Abre a aplicação em modo de desenvolvimento em [http://localhost:5173](http://localhost:5173).
+Abre a aplicação em modo de desenvolvimento em [http://localhost:8080](http://localhost:8080).
 
 ### Build
 

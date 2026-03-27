@@ -1,0 +1,5 @@
+# AI Agent Rules
+
+- **Local Port**: Always use port **8080** for local development, testing, and browsing tasks in this project.
+- **Vite Config**: Port configuration is defined in `vite.config.ts`.
+- **README**: Port information is documented in `README.md`.
