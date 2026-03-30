@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -44,7 +44,8 @@ const MainApp = () => {
 
   // Se o usuário está logado mas ainda não completou o perfil, força o redirecionamento
   // Exceto se ele já estiver na página de completar o perfil
-  const isProfileSetupPath = window.location.pathname === '/register-profile'
+  const { pathname } = useLocation()
+  const isProfileSetupPath = pathname === '/register-profile'
   if (!user.profileCompleted && !isProfileSetupPath) {
     return <Navigate to="/register-profile" replace />
   }
