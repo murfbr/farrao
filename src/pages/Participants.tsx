@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { isBefore, parseISO, startOfDay } from 'date-fns'
+import { isBefore, parseISO, startOfDay, format } from 'date-fns'
 import useAppStore, { MemberCategory, FinanceStatus } from '@/stores/useAppStore'
 import { cn } from '@/lib/utils'
 
@@ -36,6 +36,7 @@ export default function Participants() {
       payments: p.payments || {},
       beverageStatus: p.beverageStatus,
       hasConfirmed: p.hasConfirmed,
+      attendingDates: p.attendingDates || [],
     }))
   })
 
@@ -183,11 +184,12 @@ export default function Participants() {
                 <TableHead className="font-bold text-foreground">Nome Completo</TableHead>
                 <TableHead className="font-bold text-foreground">Família Representante</TableHead>
                 <TableHead className="font-bold text-foreground">Categoria</TableHead>
+                <TableHead className="text-center font-bold text-foreground">Presença</TableHead>
                 <TableHead className="text-center font-bold text-foreground">Confirmado</TableHead>
                 <TableHead className="text-center font-bold text-foreground">
                   Pacote Bebida
                 </TableHead>
-                {user.isGovernance && (
+                {user.isSuperAdmin && (
                   <TableHead className="text-center font-bold text-foreground">
                     <span className="flex items-center justify-center gap-1">
                       <DollarSign className="w-4 h-4 text-red-500" />
@@ -227,6 +229,19 @@ export default function Participants() {
                       >
                         {categoryLabels[m.category]}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex flex-wrap justify-center gap-1 min-w-[80px]">
+                        {m.attendingDates && m.attendingDates.length > 0 ? (
+                          m.attendingDates.sort().map(date => (
+                            <Badge key={date} variant="secondary" className="text-[9px] px-1 py-0 bg-emerald-50 text-emerald-700 border-emerald-100">
+                              {format(parseISO(date), 'dd/MM')}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground italic">Sem datas</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">
                       {m.hasConfirmed ? (

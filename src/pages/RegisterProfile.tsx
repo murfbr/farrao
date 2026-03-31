@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Save, Users, X, Plus, Calendar, Beer, Leaf } from 'lucide-react'
+import { Save, Users, X, Plus, Calendar, Beer, Leaf, CheckCircle2, CalendarCheck2 } from 'lucide-react'
+import { format, addDays, differenceInDays, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import {
   Card,
   CardContent,
@@ -26,9 +28,24 @@ import useAppStore, { MemberCategory, FamilyMember } from '@/stores/useAppStore'
 import { cn } from '@/lib/utils'
 
 export default function RegisterProfile() {
-  const { user, setUser, updateParticipant } = useAppStore()
+  const { user, setUser, updateParticipant, eventDetails } = useAppStore()
   const { toast } = useToast()
   const navigate = useNavigate()
+
+  // Gerar datas dinâmicas do evento
+  const eventDays = useMemo(() => {
+    const start = eventDetails.startDate ? parseISO(eventDetails.startDate) : new Date(2026, 11, 20)
+    const end = eventDetails.endDate ? parseISO(eventDetails.endDate) : new Date(2026, 11, 24)
+    
+    const diff = differenceInDays(end, start)
+    const days = []
+    
+    for (let i = 0; i <= diff; i++) {
+      days.push(addDays(start, i))
+    }
+    
+    return days
+  }, [eventDetails.startDate, eventDetails.endDate])
 
   const [formData, setFormData] = useState({
     name: user.name || '',
@@ -42,8 +59,24 @@ export default function RegisterProfile() {
         restrictions: '',
       }
     ],
-    daysAttending: 3, // Padrão 3 dias conforme solicitado
+    attendingDates: user.attendingDates || ['2026-12-20', '2026-12-21', '2026-12-22'], // Padrão 3 dias iniciais
+    daysAttending: user.attendingDates?.length || 3,
   })
+
+  const toggleDate = (dateStr: string) => {
+    setFormData((prev) => {
+      const currentDates = prev.attendingDates || []
+      const newDates = currentDates.includes(dateStr)
+        ? currentDates.filter((d) => d !== dateStr)
+        : [...currentDates, dateStr]
+      
+      return {
+        ...prev,
+        attendingDates: newDates,
+        daysAttending: newDates.length
+      }
+    })
+  }
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => {
@@ -108,6 +141,7 @@ export default function RegisterProfile() {
         name: formData.name,
         members: formData.members,
         daysAttending: formData.daysAttending,
+        attendingDates: formData.attendingDates,
         profileCompleted: true,
         eventIds: ['farrao-2026'],
       }
@@ -117,6 +151,7 @@ export default function RegisterProfile() {
         name: formData.name,
         members: formData.members,
         daysAttending: formData.daysAttending,
+        attendingDates: formData.attendingDates,
         groupIds: [],
       })
 
@@ -323,45 +358,75 @@ export default function RegisterProfile() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-2xl border-emerald-200/50 bg-white/95 backdrop-blur-md rounded-[2.5rem] overflow-hidden">
-          <CardHeader className="bg-emerald-500/5 border-b border-emerald-100/50 py-8 px-8">
-            <CardTitle className="text-2xl font-black font-display text-emerald-700 flex items-center justify-center sm:justify-start gap-3">
+        <Card className="shadow-2xl border-emerald-200/50 bg-white/95 backdrop-blur-md rounded-[2.5rem] overflow-hidden mb-12">
+          <CardHeader className="bg-emerald-500/5 border-b border-emerald-100/50 p-8">
+            <CardTitle className="flex items-center space-x-3 text-2xl font-black font-display text-emerald-700">
               <div className="p-2 bg-emerald-100 rounded-xl">
-                <Calendar className="w-6 h-6 text-emerald-600" />
+                <CalendarCheck2 className="w-6 h-6" />
               </div>
-              Dias de Presença
+              <span>Dias de Presença</span>
             </CardTitle>
-            <CardDescription className="font-bold text-emerald-600/60 text-center sm:text-left">
-              Quantos dias vocês estarão na festa?
+            <CardDescription className="text-base font-bold text-emerald-600/60">
+              Selecione exatamente os dias que vocês estarão lá
             </CardDescription>
           </CardHeader>
           <CardContent className="p-10">
-            <div className="flex flex-col items-center gap-6">
-              <div className="flex items-center gap-10">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="w-16 h-16 rounded-3xl border-2 border-emerald-100 text-emerald-600 hover:bg-emerald-50 font-black text-2xl shadow-sm transition-all active:scale-90"
-                  onClick={() => handleChange('daysAttending', Math.max(1, formData.daysAttending - 1))}
-                >
-                  -
-                </Button>
-                <div className="flex flex-col items-center">
-                  <div className="text-7xl font-black text-emerald-700 font-display min-w-[80px] text-center drop-shadow-sm">
-                    {formData.daysAttending}
-                  </div>
-                  <p className="font-black text-emerald-600/40 uppercase tracking-[0.2em] text-[10px] mt-1">Dias</p>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+              {eventDays.map((day) => {
+                const dateStr = format(day, 'yyyy-MM-dd')
+                const isSelected = formData.attendingDates?.includes(dateStr)
+                
+                return (
+                  <button
+                    key={dateStr}
+                    onClick={() => toggleDate(dateStr)}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-6 rounded-3xl border-2 transition-all duration-300 gap-2",
+                      isSelected 
+                        ? "bg-emerald-500 border-emerald-600 shadow-lg scale-105 -translate-y-1" 
+                        : "bg-white border-emerald-100 hover:border-emerald-300 text-emerald-800"
+                    )}
+                  >
+                    <span className={cn(
+                      "text-3xl font-black font-display",
+                      isSelected ? "text-white" : "text-emerald-700"
+                    )}>
+                      {format(day, 'dd')}
+                    </span>
+                    <span className={cn(
+                      "text-[10px] font-black uppercase tracking-widest",
+                      isSelected ? "text-emerald-100" : "text-emerald-400"
+                    )}>
+                      {format(day, 'MMM', { locale: ptBR })}
+                    </span>
+                    {isSelected && (
+                      <div className="mt-1">
+                        <CheckCircle2 className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+            
+            <div className="mt-10 flex items-center justify-between p-6 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-500 rounded-lg">
+                  <Calendar className="w-5 h-5 text-white" />
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="w-16 h-16 rounded-3xl border-2 border-emerald-100 text-emerald-600 hover:bg-emerald-50 font-black text-2xl shadow-sm transition-all active:scale-90"
-                  onClick={() => handleChange('daysAttending', Math.min(5, formData.daysAttending + 1))}
-                >
-                  +
-                </Button>
+                <p className="font-bold text-emerald-900">Total de dias:</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-3xl font-black text-emerald-600 font-display">
+                  {formData.attendingDates?.length || 0}
+                </span>
+                <span className="font-black text-emerald-400 uppercase text-xs tracking-widest">Dias</span>
               </div>
             </div>
+            
+            <p className="text-center text-[10px] font-bold text-emerald-600/40 uppercase tracking-[0.2em] mt-6">
+              O Farrão acontece de {format(eventDays[0], "dd 'de' MMM", { locale: ptBR })} a {format(eventDays[eventDays.length - 1], "dd 'de' MMM 'de' yyyy", { locale: ptBR })}
+            </p>
           </CardContent>
         </Card>
 
