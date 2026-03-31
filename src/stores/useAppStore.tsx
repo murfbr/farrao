@@ -428,7 +428,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             members: [
               {
                 id: firebaseUser.uid + '-1',
-                name: firebaseUser.displayName || 'Titular',
+                name: firebaseUser.displayName || 'Convidado',
                 category: 'adult',
                 isDrinking: true,
                 isVegetarian: false,
