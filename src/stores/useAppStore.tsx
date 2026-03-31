@@ -651,7 +651,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   const totalGuests = useMemo(
-    () => participants.reduce((acc, p) => acc + p.members.length, 0),
+    () => participants.reduce((acc, p) => acc + (p.members?.length || 0), 0),
     [participants],
   )
 

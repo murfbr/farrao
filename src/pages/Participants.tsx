@@ -28,15 +28,16 @@ export default function Participants() {
   const [search, setSearch] = useState('')
   const [confirmationFilter, setConfirmationFilter] = useState<string>('all')
 
-  const allMembers = participants.flatMap((p) =>
-    p.members.map((m) => ({
+  const allMembers = participants.flatMap((p) => {
+    const familyMembers = p.members || []
+    return familyMembers.map((m) => ({
       ...m,
       familyName: p.name,
-      payments: p.payments,
+      payments: p.payments || {},
       beverageStatus: p.beverageStatus,
       hasConfirmed: p.hasConfirmed,
-    })),
-  )
+    }))
+  })
 
   const filteredMembers = allMembers.filter((m) => {
     const matchesCategory = filter === 'all' || m.category === filter
@@ -255,7 +256,7 @@ export default function Participants() {
                         <div className="flex justify-center items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-lg py-1.5 px-2 w-fit mx-auto shadow-inner min-w-[60px]">
                           {eventDetails.installments.map((inst) => (
                             <React.Fragment key={inst.id}>
-                              {getStatusBadge(m.payments[inst.id] || 'pending', inst.dueDate)}
+                              {getStatusBadge(m.payments?.[inst.id] || 'pending', inst.dueDate)}
                             </React.Fragment>
                           ))}
                         </div>
