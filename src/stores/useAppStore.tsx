@@ -20,6 +20,7 @@ export type UserProfile = {
   profileCompleted: boolean
   members: FamilyMember[]
   daysAttending: number
+  attendingDates?: string[]
   eventIds: string[]
   isSuperAdmin?: boolean
   photoUrl?: string
@@ -70,6 +71,7 @@ export type ParticipantRecord = {
   hasConfirmed: boolean
   members: FamilyMember[]
   daysAttending: number
+  attendingDates?: string[]
   payments: Record<string, FinanceStatus> // key is installment ID
   beverageStatus: FinanceStatus
   socialQuotaOverride: number | null
@@ -198,6 +200,7 @@ const defaultUser: UserProfile = {
     { id: 'u1-3', name: 'Pedrinho', category: 'child_under_10', isDrinking: false, isVegetarian: false, restrictions: '' },
   ],
   daysAttending: 4,
+  attendingDates: ['2026-12-20', '2026-12-21', '2026-12-22', '2026-12-23'],
   eventIds: ['farrao-2026'],
   isSuperAdmin: true,
 }
@@ -213,6 +216,7 @@ const mockParticipants: ParticipantRecord[] = [
       { id: 'u1-3', name: 'Pedrinho', category: 'child_under_10', isDrinking: false, isVegetarian: false, restrictions: '' },
     ],
     daysAttending: 4,
+    attendingDates: ['2026-12-20', '2026-12-21', '2026-12-22', '2026-12-23'],
     payments: { 'i1': 'paid', 'i2': 'pending' },
     beverageStatus: 'pending',
     socialQuotaOverride: null,
@@ -228,6 +232,7 @@ const mockParticipants: ParticipantRecord[] = [
       { id: 'p2-3', name: 'Bia Souza', category: 'child_11_to_16', isDrinking: false, isVegetarian: false, restrictions: '' },
     ],
     daysAttending: 3,
+    attendingDates: ['2026-12-20', '2026-12-21', '2026-12-22'],
     payments: { 'i1': 'paid', 'i2': 'pending' },
     beverageStatus: 'paid',
     socialQuotaOverride: null,
@@ -239,6 +244,7 @@ const mockParticipants: ParticipantRecord[] = [
     hasConfirmed: true,
     members: [{ id: 'p3-1', name: 'Roberto', category: 'adult', isDrinking: true, isVegetarian: false, restrictions: '' }],
     daysAttending: 2,
+    attendingDates: ['2026-12-20', '2026-12-21'],
     payments: { 'i1': 'late', 'i2': 'pending' },
     beverageStatus: 'pending',
     socialQuotaOverride: 150,

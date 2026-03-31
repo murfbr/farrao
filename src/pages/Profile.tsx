@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Save, Camera, Users, HandPlatter, X, Plus, Calendar, CheckCircle2, RotateCw, AlertCircle, Beer, Leaf } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { Save, Camera, Users, HandPlatter, X, Plus, Calendar, CheckCircle2, RotateCw, AlertCircle, Beer, Leaf, ChevronRight, CalendarCheck2 } from 'lucide-react'
+import { format, addDays, differenceInDays, parseISO, isSameDay } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import {
   Card,
   CardContent,
@@ -28,8 +30,23 @@ import { getInitials, cn } from '@/lib/utils'
 import useAppStore, { MemberCategory, ParticipantRecord } from '@/stores/useAppStore'
 
 export default function Profile() {
-  const { user, setUser, updateParticipant } = useAppStore()
+  const { user, setUser, updateParticipant, eventDetails } = useAppStore()
   const { toast } = useToast()
+
+  // Gerar datas dinâmicas do evento
+  const eventDays = useMemo(() => {
+    const start = eventDetails.startDate ? parseISO(eventDetails.startDate) : new Date(2026, 11, 20)
+    const end = eventDetails.endDate ? parseISO(eventDetails.endDate) : new Date(2026, 11, 24)
+    
+    const diff = differenceInDays(end, start)
+    const days = []
+    
+    for (let i = 0; i <= diff; i++) {
+      days.push(addDays(start, i))
+    }
+    
+    return days
+  }, [eventDetails.startDate, eventDetails.endDate])
 
   const [formData, setFormData] = useState({ ...user })
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -46,6 +63,7 @@ export default function Profile() {
         name: dataToSave.name,
         members: dataToSave.members,
         daysAttending: dataToSave.daysAttending,
+        attendingDates: dataToSave.attendingDates,
         hasConfirmed: dataToSave.hasConfirmed,
       })
       
@@ -83,6 +101,21 @@ export default function Profile() {
       }
     }
   }, [formData, handleSave])
+
+  const toggleDate = (dateStr: string) => {
+    setFormData((prev) => {
+      const currentDates = prev.attendingDates || []
+      const newDates = currentDates.includes(dateStr)
+        ? currentDates.filter((d) => d !== dateStr)
+        : [...currentDates, dateStr]
+      
+      return {
+        ...prev,
+        attendingDates: newDates,
+        daysAttending: newDates.length
+      }
+    })
+  }
 
   const handleChange = (field: keyof typeof user, value: any) => {
     setFormData((prev) => {
@@ -412,42 +445,71 @@ export default function Profile() {
         <CardHeader className="bg-emerald-500/5 border-b border-emerald-100/50 p-8">
           <CardTitle className="flex items-center space-x-3 text-2xl font-black font-display text-emerald-700">
             <div className="p-2 bg-emerald-100 rounded-xl">
-              <Calendar className="w-6 h-6" />
+              <CalendarCheck2 className="w-6 h-6" />
             </div>
             <span>Dias de Presença</span>
           </CardTitle>
           <CardDescription className="text-base font-bold text-emerald-600/60">
-            Quanto tempo pretender curtir?
+            Selecione exatamente os dias que vocês estarão lá
           </CardDescription>
         </CardHeader>
         <CardContent className="p-10">
-          <div className="flex flex-col items-center gap-6">
-            <div className="flex items-center gap-10">
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="w-16 h-16 rounded-3xl border-2 border-emerald-100 text-emerald-600 hover:bg-emerald-50 font-black text-2xl shadow-sm transition-all active:scale-90"
-                onClick={() => handleChange('daysAttending', Math.max(1, formData.daysAttending - 1))}
-              >
-                -
-              </Button>
-              <div className="flex flex-col items-center">
-                <div className="text-7xl font-black text-emerald-700 font-display min-w-[80px] text-center drop-shadow-sm">
-                  {formData.daysAttending}
-                </div>
-                <p className="font-black text-emerald-600/40 uppercase tracking-[0.2em] text-[10px] mt-1">Dias</p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="w-16 h-16 rounded-3xl border-2 border-emerald-100 text-emerald-600 hover:bg-emerald-50 font-black text-2xl shadow-sm transition-all active:scale-90"
-                onClick={() => handleChange('daysAttending', Math.min(5, formData.daysAttending + 1))}
-              >
-                +
-              </Button>
-            </div>
-            <p className="text-xs font-bold text-muted-foreground/50 uppercase tracking-[0.2em]">O Farrão 2026 acontece de 20 a 24 de Dezembro</p>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+            {eventDays.map((day) => {
+              const dateStr = format(day, 'yyyy-MM-dd')
+              const isSelected = formData.attendingDates?.includes(dateStr)
+              
+              return (
+                <button
+                  key={dateStr}
+                  onClick={() => toggleDate(dateStr)}
+                  className={cn(
+                    "flex flex-col items-center justify-center p-6 rounded-3xl border-2 transition-all duration-300 gap-2",
+                    isSelected 
+                      ? "bg-emerald-500 border-emerald-600 shadow-lg scale-105 -translate-y-1" 
+                      : "bg-white border-emerald-100 hover:border-emerald-300 text-emerald-800"
+                  )}
+                >
+                  <span className={cn(
+                    "text-3xl font-black font-display",
+                    isSelected ? "text-white" : "text-emerald-700"
+                  )}>
+                    {format(day, 'dd')}
+                  </span>
+                  <span className={cn(
+                    "text-[10px] font-black uppercase tracking-widest",
+                    isSelected ? "text-emerald-100" : "text-emerald-400"
+                  )}>
+                    {format(day, 'MMM', { locale: ptBR })}
+                  </span>
+                  {isSelected && (
+                    <div className="mt-1">
+                      <CheckCircle2 className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                </button>
+              )
+            })}
           </div>
+          
+          <div className="mt-10 flex items-center justify-between p-6 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500 rounded-lg">
+                <RotateCw className="w-5 h-5 text-white" />
+              </div>
+              <p className="font-bold text-emerald-900">Total de dias:</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-3xl font-black text-emerald-600 font-display">
+                {formData.attendingDates?.length || 0}
+              </span>
+              <span className="font-black text-emerald-400 uppercase text-xs tracking-widest">Dias</span>
+            </div>
+          </div>
+          
+          <p className="text-center text-[10px] font-bold text-emerald-600/40 uppercase tracking-[0.2em] mt-6">
+            O Farrão acontece de {format(eventDays[0], "dd 'de' MMM", { locale: ptBR })} a {format(eventDays[eventDays.length - 1], "dd 'de' MMM 'de' yyyy", { locale: ptBR })}
+          </p>
         </CardContent>
       </Card>
     </div>
