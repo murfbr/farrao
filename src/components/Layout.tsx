@@ -84,7 +84,7 @@ export default function Layout() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full relative">
+      <div className="flex-1 flex flex-col h-full relative overflow-hidden">
         {/* Header */}
         <header className="flex-none h-16 bg-white/40 backdrop-blur-md border-b border-amber-200/50 px-4 md:px-8 flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center space-x-3 md:hidden">
@@ -129,14 +129,14 @@ export default function Layout() {
         </header>
 
         {/* Scrollable Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-8">
           <div className="max-w-5xl mx-auto w-full h-full">
             <Outlet />
           </div>
         </main>
 
         {/* Mobile Bottom Nav */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-xl border-t border-amber-200/50 flex justify-around items-center px-4 pb-safe z-50 shadow-[0_-5px_15px_-3px_rgba(255,102,0,0.1)]">
+        <nav className="md:hidden flex-none h-16 bg-white/95 backdrop-blur-xl border-t border-amber-200/50 flex justify-around items-center px-4 pb-safe shadow-[0_-5px_15px_-3px_rgba(255,102,0,0.05)]">
           {NAV_ITEMS.filter(item => item.path !== '/profile').map((item) => {
             const isActive = location.pathname === item.path
             return (
