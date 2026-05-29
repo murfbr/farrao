@@ -30,8 +30,9 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-100 p-4">
-      <div className="max-w-md w-full bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 space-y-8 border border-amber-200 animate-fade-in">
+    <div className="h-[100dvh] overflow-y-auto bg-gradient-to-br from-orange-50 to-amber-100">
+      <div className="min-h-full flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 space-y-8 border border-amber-200 animate-fade-in">
         <div className="text-center space-y-4">
           <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
             <span className="text-4xl">🥩</span>
@@ -95,6 +96,7 @@ export default function Login() {
             Cadastre-se com seu convite
           </Link>
         </p>
+      </div>
       </div>
     </div>
   )

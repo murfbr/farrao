@@ -38,8 +38,9 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-100 p-4">
-      <div className="max-w-md w-full bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 space-y-8 border border-amber-200 animate-fade-in">
+    <div className="h-[100dvh] overflow-y-auto bg-gradient-to-br from-orange-50 to-amber-100">
+      <div className="min-h-full flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 space-y-8 border border-amber-200 animate-fade-in">
         <div className="text-center space-y-4">
           <h1 className="text-3xl font-black font-display text-primary tracking-tight">Primeiro Acesso</h1>
           <p className="text-foreground/70 font-medium text-sm">
@@ -82,6 +83,7 @@ export default function Register() {
             Faça login aqui
           </Link>
         </p>
+      </div>
       </div>
     </div>
   )

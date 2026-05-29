@@ -170,7 +170,7 @@ export default function RegisterProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 py-12 px-4">
+    <div className="h-[100dvh] overflow-y-auto bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 py-12 px-4">
       <div className="max-w-2xl mx-auto space-y-2 animate-fade-in text-center mb-10">
         <div className="inline-block p-3 bg-white rounded-2xl shadow-sm mb-4 border border-amber-100">
           <span className="text-4xl">🥩</span>
