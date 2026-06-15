@@ -11,8 +11,10 @@ import {
   Utensils,
   KeyRound,
   Vote,
+  LogOut,
 } from 'lucide-react'
 import { cn, getInitials } from '@/lib/utils'
+import { logout } from '@/firebase/services'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -47,39 +49,48 @@ export default function Layout() {
             </p>
           </div>
         </div>
-        <nav className="flex-1 px-4 space-y-2 mt-4">
-          {NAV_ITEMS.map((item) => {
-            const isActive = location.pathname === item.path
-            return (
+        <nav className="flex-1 flex flex-col px-4 space-y-2 mt-4 pb-6">
+          <div className="flex-1 space-y-2">
+            {NAV_ITEMS.map((item) => {
+              const isActive = location.pathname === item.path
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200',
+                    isActive
+                      ? 'bg-gradient-to-r from-primary to-orange-400 text-white shadow-md shadow-primary/20 scale-105 origin-left'
+                      : 'text-foreground/70 hover:bg-orange-100/50 hover:text-primary',
+                  )}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="font-semibold">{item.label}</span>
+                </Link>
+              )
+            })}
+            {user.isGovernance && (
               <Link
-                key={item.path}
-                to={item.path}
+                to="/admin"
                 className={cn(
-                  'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200',
-                  isActive
-                    ? 'bg-gradient-to-r from-primary to-orange-400 text-white shadow-md shadow-primary/20 scale-105 origin-left'
-                    : 'text-foreground/70 hover:bg-orange-100/50 hover:text-primary',
+                  'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 mt-4',
+                  location.pathname === '/admin'
+                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-md shadow-emerald-500/20 scale-105 origin-left'
+                    : 'text-foreground/70 hover:bg-emerald-50/50 hover:text-emerald-600 border border-emerald-100/50',
                 )}
               >
-                <item.icon className="w-5 h-5" />
-                <span className="font-semibold">{item.label}</span>
+                <KeyRound className="w-5 h-5" />
+                <span className="font-semibold">Convites (Admin)</span>
               </Link>
-            )
-          })}
-          {user.isGovernance && (
-            <Link
-              to="/admin"
-              className={cn(
-                'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 mt-4',
-                location.pathname === '/admin'
-                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-md shadow-emerald-500/20 scale-105 origin-left'
-                  : 'text-foreground/70 hover:bg-emerald-50/50 hover:text-emerald-600 border border-emerald-100/50',
-              )}
-            >
-              <KeyRound className="w-5 h-5" />
-              <span className="font-semibold">Convites (Admin)</span>
-            </Link>
-          )}
+            )}
+          </div>
+          <button
+            onClick={() => logout()}
+            className="flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 mt-4 text-rose-500 hover:bg-rose-50 hover:text-rose-600 w-full text-left focus:outline-none"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-semibold">Sair</span>
+          </button>
         </nav>
       </aside>
 
@@ -125,6 +136,15 @@ export default function Layout() {
                 </AvatarFallback>
               </Avatar>
             </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+              onClick={() => logout()}
+              title="Sair"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
           </div>
         </header>
 
