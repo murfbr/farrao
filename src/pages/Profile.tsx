@@ -51,9 +51,17 @@ export default function Profile() {
   const [formData, setFormData] = useState({ ...user })
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const hasUnsavedChanges = useRef(false)
 
   // Use a ref to track if it's the initial mount to avoid auto-saving on first load
   const isInitialMount = useRef(true)
+
+  // Sincroniza os dados do servidor caso o usuário não tenha edições não salvas
+  useEffect(() => {
+    if (!hasUnsavedChanges.current) {
+      setFormData(user)
+    }
+  }, [user])
 
   const handleSave = useCallback(async (dataToSave: typeof user) => {
     setSaveStatus('saving')
@@ -87,11 +95,14 @@ export default function Profile() {
       return
     }
 
+    if (!hasUnsavedChanges.current) return
+
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current)
     }
 
     saveTimeoutRef.current = setTimeout(() => {
+      hasUnsavedChanges.current = false // Reseta o estado antes de salvar
       handleSave(formData)
     }, 1500) // 1.5 seconds debounce
 
@@ -103,6 +114,7 @@ export default function Profile() {
   }, [formData, handleSave])
 
   const toggleDate = (dateStr: string) => {
+    hasUnsavedChanges.current = true
     setFormData((prev) => {
       const currentDates = prev.attendingDates || []
       const newDates = currentDates.includes(dateStr)
@@ -118,6 +130,7 @@ export default function Profile() {
   }
 
   const handleChange = (field: keyof typeof user, value: any) => {
+    hasUnsavedChanges.current = true
     setFormData((prev) => {
       const newData = { ...prev, [field]: value }
       
@@ -133,6 +146,7 @@ export default function Profile() {
   }
 
   const addMember = () => {
+    hasUnsavedChanges.current = true
     setFormData((prev) => ({
       ...prev,
       members: [
@@ -150,13 +164,22 @@ export default function Profile() {
   }
 
   const updateMember = (id: string, field: string, value: any) => {
+    hasUnsavedChanges.current = true
     setFormData((prev) => ({
       ...prev,
-      members: prev.members.map((m) => (m.id === id ? { ...m, [field]: value } : m)),
+      members: prev.members.map((m) => {
+        if (m.id !== id) return m
+        const newMember = { ...m, [field]: value }
+        if (field === 'category' && value !== 'adult') {
+          newMember.isDrinking = false
+        }
+        return newMember
+      }),
     }))
   }
 
   const removeMember = (id: string) => {
+    hasUnsavedChanges.current = true
     setFormData((prev) => ({
       ...prev,
       members: prev.members.filter((m) => m.id !== id),
@@ -379,23 +402,24 @@ export default function Profile() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="flex items-center justify-between p-4 bg-orange-50/30 rounded-2xl border border-amber-100/50 transition-all hover:bg-orange-50/50">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-amber-100 rounded-xl shadow-sm">
-                      <Beer className="w-6 h-6 text-amber-600" />
+                {m.category === 'adult' && (
+                  <div className="flex items-center justify-between p-4 bg-orange-50/30 rounded-2xl border border-amber-100/50 transition-all hover:bg-orange-50/50">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-amber-100 rounded-xl shadow-sm">
+                        <Beer className="w-6 h-6 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="font-black text-sm text-foreground/80">Bebe Chopp?</p>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Custo faturado</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-black text-sm text-foreground/80">Bebe Chopp?</p>
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Custo faturado</p>
-                    </div>
+                    <Switch
+                      checked={m.isDrinking}
+                      onCheckedChange={(val) => updateMember(m.id, 'isDrinking', val)}
+                      className="data-[state=checked]:bg-amber-500 scale-110"
+                    />
                   </div>
-                  <Switch
-                    checked={m.isDrinking}
-                    onCheckedChange={(val) => updateMember(m.id, 'isDrinking', val)}
-                    disabled={m.category !== 'adult'}
-                    className="data-[state=checked]:bg-amber-500 scale-110"
-                  />
-                </div>
+                )}
 
                 <div className="flex items-center justify-between p-4 bg-emerald-50/30 rounded-2xl border border-emerald-100/50 transition-all hover:bg-emerald-50/50">
                   <div className="flex items-center gap-4">

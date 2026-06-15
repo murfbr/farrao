@@ -49,7 +49,7 @@ export default function RegisterProfile() {
 
   const [formData, setFormData] = useState({
     name: user.name || '',
-    members: user.members.length > 0 ? user.members : [
+    members: user.members?.length > 0 ? user.members : [
       {
         id: Math.random().toString(36).substr(2, 9),
         name: user.name || '',
@@ -113,7 +113,14 @@ export default function RegisterProfile() {
   const updateMember = (id: string, field: string, value: any) => {
     setFormData((prev) => ({
       ...prev,
-      members: prev.members.map((m) => (m.id === id ? { ...m, [field]: value } : m)),
+      members: prev.members.map((m) => {
+        if (m.id !== id) return m
+        const newMember = { ...m, [field]: value }
+        if (field === 'category' && value !== 'adult') {
+          newMember.isDrinking = false
+        }
+        return newMember
+      }),
     }))
   }
 
@@ -308,23 +315,24 @@ export default function RegisterProfile() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
-                  <div className="flex items-center justify-between p-4 bg-orange-50/30 rounded-2xl border border-amber-100/50 transition-all hover:bg-orange-50/50">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-amber-100 rounded-xl shadow-sm">
-                        <Beer className="w-6 h-6 text-amber-600" />
+                  {m.category === 'adult' && (
+                    <div className="flex items-center justify-between p-4 bg-orange-50/30 rounded-2xl border border-amber-100/50 transition-all hover:bg-orange-50/50">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-amber-100 rounded-xl shadow-sm">
+                          <Beer className="w-6 h-6 text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="font-black text-sm text-foreground/80">Bebe Chopp?</p>
+                          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Custo faturado</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-black text-sm text-foreground/80">Bebe Chopp?</p>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Valor fixo por pessoa</p>
-                      </div>
+                      <Switch
+                        checked={m.isDrinking}
+                        onCheckedChange={(val) => updateMember(m.id, 'isDrinking', val)}
+                        className="data-[state=checked]:bg-amber-500 scale-110"
+                      />
                     </div>
-                    <Switch
-                      checked={m.isDrinking}
-                      onCheckedChange={(val) => updateMember(m.id, 'isDrinking', val)}
-                      disabled={m.category !== 'adult'}
-                      className="data-[state=checked]:bg-amber-500 scale-110"
-                    />
-                  </div>
+                  )}
 
                   <div className="flex items-center justify-between p-4 bg-emerald-50/30 rounded-2xl border border-emerald-100/50 transition-all hover:bg-emerald-50/50">
                     <div className="flex items-center gap-4">
