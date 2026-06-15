@@ -47,20 +47,23 @@ export default function RegisterProfile() {
     return days
   }, [eventDetails.startDate, eventDetails.endDate])
 
-  const [formData, setFormData] = useState({
-    name: user.name || '',
-    members: user.members?.length > 0 ? user.members : [
-      {
-        id: Math.random().toString(36).substr(2, 9),
-        name: user.name || '',
-        category: 'adult' as MemberCategory,
-        isDrinking: true,
-        isVegetarian: false,
-        restrictions: '',
-      }
-    ],
-    attendingDates: user.attendingDates || ['2026-12-20', '2026-12-21', '2026-12-22'], // Padrão 3 dias iniciais
-    daysAttending: user.attendingDates?.length || 3,
+  const [formData, setFormData] = useState(() => {
+    const defaultDates = eventDays.slice(0, 3).map(day => format(day, 'yyyy-MM-dd'))
+    return {
+      name: user.name || '',
+      members: user.members?.length > 0 ? user.members : [
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          name: user.name || '',
+          category: 'adult' as MemberCategory,
+          isDrinking: true,
+          isVegetarian: false,
+          restrictions: '',
+        }
+      ],
+      attendingDates: user.attendingDates || defaultDates,
+      daysAttending: user.attendingDates?.length || defaultDates.length,
+    }
   })
 
   const toggleDate = (dateStr: string) => {
