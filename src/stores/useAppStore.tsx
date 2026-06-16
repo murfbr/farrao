@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react'
 import * as db from '../firebase/services'
+import { toast } from '../hooks/use-toast'
 
 export type MemberCategory = 'adult' | 'child_under_10' | 'child_11_to_16' | 'nanny'
 
@@ -373,38 +374,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const unsubAuth = db.subscribeToAuth(async (firebaseUser) => {
       if (firebaseUser) {
-        let profile = await db.getUserProfile(firebaseUser.uid)
-        const isGod = firebaseUser.email ? await db.checkIfSuperAdmin(firebaseUser.email) : false
+        try {
+          let profile = await db.getUserProfile(firebaseUser.uid)
+          const isGod = firebaseUser.email ? await db.checkIfSuperAdmin(firebaseUser.email) : false
 
-        if (!profile) {
-          profile = {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || 'Convidado',
-            email: firebaseUser.email || '',
-            hasConfirmed: false,
-            profileCompleted: false,
-            members: [
-              {
-                id: firebaseUser.uid + '-1',
-                name: firebaseUser.displayName || 'Convidado',
-                category: 'adult',
-                isDrinking: true,
-                isVegetarian: false,
-                restrictions: '',
-              },
-            ],
-            daysAttending: 0,
-            attendingDates: [],
-            isSuperAdmin: isGod,
-            photoUrl: firebaseUser.photoURL || '',
-            eventIds: ['farrao-2026'],
+          if (!profile) {
+            profile = {
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || 'Convidado',
+              email: firebaseUser.email || '',
+              hasConfirmed: false,
+              profileCompleted: false,
+              members: [
+                {
+                  id: firebaseUser.uid + '-1',
+                  name: firebaseUser.displayName || 'Convidado',
+                  category: 'adult',
+                  isDrinking: true,
+                  isVegetarian: false,
+                  restrictions: '',
+                },
+              ],
+              daysAttending: 0,
+              attendingDates: [],
+              isSuperAdmin: isGod,
+              photoUrl: firebaseUser.photoURL || '',
+              eventIds: ['farrao-2026'],
+            }
+            await db.updateUserProfile(firebaseUser.uid, profile)
+            // Garante que o flag isSuperAdmin esteja no estado local mesmo se já tiver perfil
+            profile.isSuperAdmin = true
           }
-          await db.updateUserProfile(firebaseUser.uid, profile)
-          // Garante que o flag isSuperAdmin esteja no estado local mesmo se já tiver perfil
-          profile.isSuperAdmin = true
+          setIsAdmin(isGod)
+          setUserState(profile)
+        } catch (err: any) {
+          console.error("Erro ao carregar ou criar perfil. Permissão negada?", err)
+          await db.logout()
+          toast({
+            title: 'Acesso Negado',
+            description: 'Você não tem permissão para acessar o aplicativo ou ocorreu um erro.',
+            variant: 'destructive',
+          })
+          setUserState(defaultUser)
         }
-        setIsAdmin(isGod)
-        setUserState(profile)
       } else {
         setUserState(defaultUser)
       }

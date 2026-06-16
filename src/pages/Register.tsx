@@ -17,7 +17,7 @@ export default function Register() {
     e.preventDefault()
     setLoading(true)
     try {
-      await registerWithEmail(email, password)
+      await registerWithEmail(email.toLowerCase(), password)
       // O listener do `useAppStore` vai rodar automaticamente e checar se o email tá aprovado.
       // Se não estiver, o Firebase vai retornar erro nas queries de onSnapshot, mas a autenticação passa.
       // Idealmente, poderíamos checar o displayName em updateProfile, mas o useAppStore resolve isso.

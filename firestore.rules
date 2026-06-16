@@ -10,13 +10,13 @@ service cloud.firestore {
     // SUPREMO: Verifica se o email autenticado está na coleção raiz de superadmins
     function isSuperAdmin() {
       return isAuthenticated() && 
-             exists(/databases/$(database)/documents/superadmins/$(request.auth.token.email));
+             exists(/databases/$(database)/documents/superadmins/$(request.auth.token.email.lower()));
     }
 
     // ANTI-VAZAMENTO: Verifica se o email está na lista de convidados permitidos
     function isAllowed() {
       return isSuperAdmin() || 
-             (isAuthenticated() && exists(/databases/$(database)/documents/allowed_emails/$(request.auth.token.email)));
+             (isAuthenticated() && exists(/databases/$(database)/documents/allowed_emails/$(request.auth.token.email.lower())));
     }
 
     // Regras de posse baseadas no usuário permitido

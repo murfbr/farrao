@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { LogIn } from 'lucide-react'
-import { loginWithGoogle, loginWithEmail } from '@/firebase/services'
+import { loginWithEmail } from '@/firebase/services'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Login() {
@@ -17,7 +16,7 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
     try {
-      await loginWithEmail(email, password)
+      await loginWithEmail(email.toLowerCase(), password)
     } catch (err: any) {
       toast({
         title: 'Acesso Negado',
@@ -71,31 +70,14 @@ export default function Login() {
           </Button>
         </form>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-amber-200" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-foreground/40 font-bold tracking-wider">Ou</span>
-          </div>
+        <div className="mt-6 pt-6 border-t border-amber-200/60 flex flex-col items-center gap-3">
+          <p className="text-foreground/70 font-semibold text-sm">É o seu primeiro acesso?</p>
+          <Button type="button" variant="outline" className="w-full h-12 font-bold rounded-xl border-2 border-primary text-primary hover:bg-primary/5 shadow-sm" asChild>
+            <Link to="/register">
+              Cadastre-se com seu convite
+            </Link>
+          </Button>
         </div>
-
-        <Button 
-          type="button"
-          onClick={loginWithGoogle}
-          variant="outline"
-          className="w-full h-12 font-bold rounded-xl border-amber-200 hover:bg-orange-50"
-        >
-          <LogIn className="w-4 h-4 mr-2" />
-          Continuar com Google
-        </Button>
-
-        <p className="text-center text-sm font-medium text-foreground/60 pt-4">
-          Não tem conta?{' '}
-          <Link to="/register" className="text-primary hover:underline font-bold">
-            Cadastre-se com seu convite
-          </Link>
-        </p>
       </div>
       </div>
     </div>
