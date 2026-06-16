@@ -59,8 +59,10 @@ export type Poll = {
   description: string
   deadline: string
   status: 'open' | 'closed'
+  allowMultiple?: boolean
   options: PollOption[]
   votedOptionId?: string
+  votedOptionIds?: string[]
 }
 
 export type FinanceStatus = 'paid' | 'pending' | 'late'
@@ -165,8 +167,8 @@ type AppState = {
   moveTask: (id: string, newStatus: TaskStatus) => void
   addTask: (task: Omit<Task, 'id'>) => void
   polls: Poll[]
-  votePoll: (pollId: string, optionId: string) => void
-  addPoll: (poll: Omit<Poll, 'id' | 'votedOptionId' | 'status'>) => void
+  votePoll: (pollId: string, optionIds: string[]) => void
+  addPoll: (poll: Omit<Poll, 'id' | 'votedOptionId' | 'votedOptionIds' | 'status'>) => void
   totalGuests: number
   announcements: Announcement[]
   addAnnouncement: (ann: Omit<Announcement, 'id' | 'date' | 'archived'>) => void
@@ -398,18 +400,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([])
 
   const [eventDetails, setEventDetails] = useState<EventDetails>({
-    title: 'Farrão',
-    message: '',
+    title: 'Nome do Evento',
+    message: 'Detalhes aparecerão aqui em breve!',
     date: '',
     location: '',
     targetDate: '',
     startDate: '',
     endDate: '',
-    installments: [
-      { id: '1', label: 'Parcela 1', dueDate: '2025-10-10' },
-      { id: '2', label: 'Parcela 2', dueDate: '2025-11-10' },
-      { id: '3', label: 'Parcela 3', dueDate: '2025-12-10' },
-    ],
+    installments: [],
     backgroundImage: '',
   })
 
@@ -470,6 +468,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (data.venuePhotos) {
           setVenuePhotos(data.venuePhotos)
         }
+      } else {
+        // Fallback limpo caso o banco de dados esteja zerado
+        setEventDetails({
+          title: 'Nome do Evento',
+          message: 'Detalhes aparecerão aqui em breve!',
+          date: '',
+          location: '',
+          targetDate: '',
+          startDate: '',
+          endDate: '',
+          installments: [],
+          backgroundImage: '',
+        })
       }
     })
 
@@ -593,19 +604,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await db.addTask(task)
   }
 
-  const addPoll = async (pollData: Omit<Poll, 'id' | 'votedOptionId' | 'status'>) => {
+  const addPoll = async (pollData: Omit<Poll, 'id' | 'votedOptionId' | 'votedOptionIds' | 'status'>) => {
     await db.addPoll({ ...pollData, status: 'open' })
   }
 
-  const votePoll = async (pollId: string, optionId: string) => {
+  const votePoll = async (pollId: string, optionIds: string[]) => {
     const poll = polls.find((p) => p.id === pollId)
-    if (poll && poll.status === 'open' && !poll.votedOptionId) {
+    if (poll && poll.status === 'open' && !poll.votedOptionId && !poll.votedOptionIds?.length) {
       // In a real app we would use Firebase Transactions to avoid race conditions.
       const updatedOptions = poll.options.map((o) =>
-        o.id === optionId ? { ...o, votes: o.votes + 1 } : o
+        optionIds.includes(o.id) ? { ...o, votes: o.votes + 1 } : o
       )
       // For simplicity matching the UI mock
-      await db.updatePoll(pollId, { options: updatedOptions, votedOptionId: optionId })
+      await db.updatePoll(pollId, { options: updatedOptions, votedOptionIds: optionIds })
     }
   }
 

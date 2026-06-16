@@ -23,6 +23,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/hooks/use-toast'
 import useAppStore from '@/stores/useAppStore'
@@ -32,19 +34,20 @@ export default function Voting() {
   const { user, polls, votePoll, addPoll } = useAppStore()
   const { toast } = useToast()
 
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({})
 
   // New Poll State
   const [newPollTitle, setNewPollTitle] = useState('')
   const [newPollDesc, setNewPollDesc] = useState('')
   const [newPollDeadline, setNewPollDeadline] = useState('')
   const [newPollOptions, setNewPollOptions] = useState(['', ''])
+  const [newPollAllowMultiple, setNewPollAllowMultiple] = useState(false)
 
   const handleVote = (pollId: string) => {
-    const optionId = selectedOptions[pollId]
-    if (!optionId) return
+    const optionIds = selectedOptions[pollId]
+    if (!optionIds || optionIds.length === 0) return
 
-    votePoll(pollId, optionId)
+    votePoll(pollId, optionIds)
     toast({
       title: 'Voto na Urna! 🎸',
       description: 'Obrigado por ajudar a decidir a nossa festa.',
@@ -65,6 +68,7 @@ export default function Voting() {
       title: newPollTitle,
       description: newPollDesc,
       deadline: new Date(newPollDeadline).toISOString(),
+      allowMultiple: newPollAllowMultiple,
       options: newPollOptions
         .filter((o) => o.trim())
         .map((text) => ({
@@ -82,6 +86,7 @@ export default function Voting() {
     setNewPollDesc('')
     setNewPollDeadline('')
     setNewPollOptions(['', ''])
+    setNewPollAllowMultiple(false)
   }
 
   return (
@@ -139,6 +144,17 @@ export default function Voting() {
                     className="border-red-200 focus-visible:ring-red-500 bg-white"
                   />
                 </div>
+                <div className="flex items-center justify-between p-4 bg-orange-50/30 rounded-2xl border border-amber-100">
+                  <div className="space-y-0.5">
+                    <Label className="font-bold">Múltiplas Escolhas</Label>
+                    <p className="text-sm text-muted-foreground">Permitir que votem em mais de uma opção</p>
+                  </div>
+                  <Switch
+                    checked={newPollAllowMultiple}
+                    onCheckedChange={setNewPollAllowMultiple}
+                    className="data-[state=checked]:bg-primary"
+                  />
+                </div>
                 <div className="space-y-3">
                   <Label className="font-bold">Opções pro pessoal escolher</Label>
                   {newPollOptions.map((opt, i) => (
@@ -187,7 +203,7 @@ export default function Voting() {
           const deadlineDate = new Date(poll.deadline)
           const isPastDeadline = deadlineDate < new Date()
           const isClosed = poll.status === 'closed' || isPastDeadline
-          const hasVoted = !!poll.votedOptionId
+          const hasVoted = !!poll.votedOptionId || !!poll.votedOptionIds?.length
           const showResults = isClosed || hasVoted
 
           const formattedDeadline = deadlineDate.toLocaleDateString('pt-BR', {
@@ -247,35 +263,71 @@ export default function Voting() {
 
               <CardContent className="pt-6">
                 {!showResults ? (
-                  <RadioGroup
-                    value={selectedOptions[poll.id]}
-                    onValueChange={(val) =>
-                      setSelectedOptions((prev) => ({ ...prev, [poll.id]: val }))
-                    }
-                    className="space-y-4"
-                  >
-                    {poll.options.map((option) => (
-                      <Label
-                        key={option.id}
-                        htmlFor={`opt-${poll.id}-${option.id}`}
-                        className={cn(
-                          'flex items-center space-x-4 bg-white border-2 p-4 rounded-xl transition-all cursor-pointer',
-                          selectedOptions[poll.id] === option.id
-                            ? 'border-primary bg-primary/5 shadow-sm scale-[1.02]'
-                            : 'border-amber-100 hover:border-primary/50 hover:bg-orange-50/30',
-                        )}
-                      >
-                        <RadioGroupItem
-                          value={option.id}
-                          id={`opt-${poll.id}-${option.id}`}
-                          className="w-5 h-5 text-primary border-primary"
-                        />
-                        <span className="flex-1 font-bold text-lg text-foreground">
-                          {option.text}
-                        </span>
-                      </Label>
-                    ))}
-                  </RadioGroup>
+                  poll.allowMultiple ? (
+                    <div className="space-y-4">
+                      {poll.options.map((option) => (
+                        <Label
+                          key={option.id}
+                          htmlFor={`opt-${poll.id}-${option.id}`}
+                          className={cn(
+                            'flex items-center space-x-4 bg-white border-2 p-4 rounded-xl transition-all cursor-pointer',
+                            (selectedOptions[poll.id] || []).includes(option.id)
+                              ? 'border-primary bg-primary/5 shadow-sm scale-[1.02]'
+                              : 'border-amber-100 hover:border-primary/50 hover:bg-orange-50/30',
+                          )}
+                        >
+                          <Checkbox
+                            id={`opt-${poll.id}-${option.id}`}
+                            checked={(selectedOptions[poll.id] || []).includes(option.id)}
+                            onCheckedChange={(checked) => {
+                              setSelectedOptions((prev) => {
+                                const current = prev[poll.id] || []
+                                if (checked) {
+                                  return { ...prev, [poll.id]: [...current, option.id] }
+                                } else {
+                                  return { ...prev, [poll.id]: current.filter((id) => id !== option.id) }
+                                }
+                              })
+                            }}
+                            className="w-5 h-5 border-2 data-[state=checked]:border-primary"
+                          />
+                          <span className="flex-1 font-bold text-lg text-foreground">
+                            {option.text}
+                          </span>
+                        </Label>
+                      ))}
+                    </div>
+                  ) : (
+                    <RadioGroup
+                      value={(selectedOptions[poll.id] || [])[0] || ''}
+                      onValueChange={(val) =>
+                        setSelectedOptions((prev) => ({ ...prev, [poll.id]: [val] }))
+                      }
+                      className="space-y-4"
+                    >
+                      {poll.options.map((option) => (
+                        <Label
+                          key={option.id}
+                          htmlFor={`opt-${poll.id}-${option.id}`}
+                          className={cn(
+                            'flex items-center space-x-4 bg-white border-2 p-4 rounded-xl transition-all cursor-pointer',
+                            (selectedOptions[poll.id] || [])[0] === option.id
+                              ? 'border-primary bg-primary/5 shadow-sm scale-[1.02]'
+                              : 'border-amber-100 hover:border-primary/50 hover:bg-orange-50/30',
+                          )}
+                        >
+                          <RadioGroupItem
+                            value={option.id}
+                            id={`opt-${poll.id}-${option.id}`}
+                            className="w-5 h-5 text-primary border-primary"
+                          />
+                          <span className="flex-1 font-bold text-lg text-foreground">
+                            {option.text}
+                          </span>
+                        </Label>
+                      ))}
+                    </RadioGroup>
+                  )
                 ) : (
                   <div className="space-y-5">
                     {poll.options.map((option) => {
@@ -284,7 +336,7 @@ export default function Voting() {
 
                       const maxVotes = Math.max(...poll.options.map((o) => o.votes))
                       const isWinner = isClosed && option.votes === maxVotes && totalVotes > 0
-                      const isMyVote = poll.votedOptionId === option.id
+                      const isMyVote = poll.votedOptionId === option.id || poll.votedOptionIds?.includes(option.id)
 
                       return (
                         <div key={option.id} className="space-y-2">
@@ -329,7 +381,7 @@ export default function Voting() {
                   <Button
                     size="lg"
                     className="w-full transition-transform hover:scale-[1.02] active:scale-95 shadow-md font-black text-lg rounded-xl"
-                    disabled={!selectedOptions[poll.id]}
+                    disabled={!selectedOptions[poll.id] || selectedOptions[poll.id].length === 0}
                     onClick={() => handleVote(poll.id)}
                   >
                     Confirmar Escolha

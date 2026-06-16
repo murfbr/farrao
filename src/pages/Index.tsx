@@ -180,6 +180,7 @@ export default function Index() {
               <Input
                 value={editForm.title}
                 onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                placeholder="Ex: Farrão 2026"
                 className="bg-orange-50/30 border-amber-200 font-bold"
               />
             </div>
@@ -188,6 +189,7 @@ export default function Index() {
               <Textarea
                 value={editForm.message}
                 onChange={(e) => setEditForm({ ...editForm, message: e.target.value })}
+                placeholder="Ex: Bem-vindos ao evento do ano! Preparamos tudo com muito carinho."
                 className="h-24 bg-orange-50/30 border-amber-200 resize-none font-medium"
               />
             </div>
@@ -216,6 +218,7 @@ export default function Index() {
               <Input
                 value={editForm.location}
                 onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                placeholder="Ex: Sítio Canto Verde, SP"
                 className="bg-orange-50/30 border-amber-200 font-medium"
               />
             </div>

@@ -34,8 +34,10 @@ export default function RegisterProfile() {
 
   // Gerar datas dinâmicas do evento
   const eventDays = useMemo(() => {
-    const start = eventDetails.startDate ? parseISO(eventDetails.startDate) : new Date(2026, 11, 20)
-    const end = eventDetails.endDate ? parseISO(eventDetails.endDate) : new Date(2026, 11, 24)
+    if (!eventDetails.startDate || !eventDetails.endDate) return []
+
+    const start = parseISO(eventDetails.startDate)
+    const end = parseISO(eventDetails.endDate)
     
     const diff = differenceInDays(end, start)
     const days = []
@@ -382,62 +384,72 @@ export default function RegisterProfile() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-10">
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-              {eventDays.map((day) => {
-                const dateStr = format(day, 'yyyy-MM-dd')
-                const isSelected = formData.attendingDates?.includes(dateStr)
-                
-                return (
-                  <button
-                    key={dateStr}
-                    onClick={() => toggleDate(dateStr)}
-                    className={cn(
-                      "flex flex-col items-center justify-center p-6 rounded-3xl border-2 transition-all duration-300 gap-2",
-                      isSelected 
-                        ? "bg-emerald-500 border-emerald-600 shadow-lg scale-105 -translate-y-1" 
-                        : "bg-white border-emerald-100 hover:border-emerald-300 text-emerald-800"
-                    )}
-                  >
-                    <span className={cn(
-                      "text-3xl font-black font-display",
-                      isSelected ? "text-white" : "text-emerald-700"
-                    )}>
-                      {format(day, 'dd')}
-                    </span>
-                    <span className={cn(
-                      "text-[10px] font-black uppercase tracking-widest",
-                      isSelected ? "text-emerald-100" : "text-emerald-400"
-                    )}>
-                      {format(day, 'MMM', { locale: ptBR })}
-                    </span>
-                    {isSelected && (
-                      <div className="mt-1">
-                        <CheckCircle2 className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-            
-            <div className="mt-10 flex items-center justify-between p-6 bg-emerald-50/50 rounded-2xl border border-emerald-100">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-500 rounded-lg">
-                  <Calendar className="w-5 h-5 text-white" />
+            {eventDays.length > 0 ? (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                  {eventDays.map((day) => {
+                    const dateStr = format(day, 'yyyy-MM-dd')
+                    const isSelected = formData.attendingDates?.includes(dateStr)
+                    
+                    return (
+                      <button
+                        key={dateStr}
+                        onClick={() => toggleDate(dateStr)}
+                        className={cn(
+                          "flex flex-col items-center justify-center p-6 rounded-3xl border-2 transition-all duration-300 gap-2",
+                          isSelected 
+                            ? "bg-emerald-500 border-emerald-600 shadow-lg scale-105 -translate-y-1" 
+                            : "bg-white border-emerald-100 hover:border-emerald-300 text-emerald-800"
+                        )}
+                      >
+                        <span className={cn(
+                          "text-3xl font-black font-display",
+                          isSelected ? "text-white" : "text-emerald-700"
+                        )}>
+                          {format(day, 'dd')}
+                        </span>
+                        <span className={cn(
+                          "text-[10px] font-black uppercase tracking-widest",
+                          isSelected ? "text-emerald-100" : "text-emerald-400"
+                        )}>
+                          {format(day, 'MMM', { locale: ptBR })}
+                        </span>
+                        {isSelected && (
+                          <div className="mt-1">
+                            <CheckCircle2 className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
-                <p className="font-bold text-emerald-900">Total de dias:</p>
+                
+                <div className="mt-10 flex items-center justify-between p-6 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-500 rounded-lg">
+                      <Calendar className="w-5 h-5 text-white" />
+                    </div>
+                    <p className="font-bold text-emerald-900">Total de dias:</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-3xl font-black text-emerald-600 font-display">
+                      {formData.attendingDates?.length || 0}
+                    </span>
+                    <span className="font-black text-emerald-400 uppercase text-xs tracking-widest">Dias</span>
+                  </div>
+                </div>
+                
+                <p className="text-center text-[10px] font-bold text-emerald-600/40 uppercase tracking-[0.2em] mt-6">
+                  O Farrão acontece de {format(eventDays[0], "dd 'de' MMM", { locale: ptBR })} a {format(eventDays[eventDays.length - 1], "dd 'de' MMM 'de' yyyy", { locale: ptBR })}
+                </p>
+              </>
+            ) : (
+              <div className="text-center py-8 space-y-4">
+                 <Calendar className="w-12 h-12 text-emerald-300 mx-auto opacity-50" />
+                 <p className="text-emerald-700 font-bold text-lg">As datas do evento ainda não foram fechadas!</p>
+                 <p className="text-emerald-600/70 text-sm font-medium">Conclua seu perfil agora e você poderá escolher os dias de estadia depois.</p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-3xl font-black text-emerald-600 font-display">
-                  {formData.attendingDates?.length || 0}
-                </span>
-                <span className="font-black text-emerald-400 uppercase text-xs tracking-widest">Dias</span>
-              </div>
-            </div>
-            
-            <p className="text-center text-[10px] font-bold text-emerald-600/40 uppercase tracking-[0.2em] mt-6">
-              O Farrão acontece de {format(eventDays[0], "dd 'de' MMM", { locale: ptBR })} a {format(eventDays[eventDays.length - 1], "dd 'de' MMM 'de' yyyy", { locale: ptBR })}
-            </p>
+            )}
           </CardContent>
         </Card>
 
