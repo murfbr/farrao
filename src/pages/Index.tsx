@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   MapPin,
@@ -62,6 +62,7 @@ export default function Index() {
     updateEventDetails,
     venuePhotos,
     updateVenuePhotos,
+    updateParticipant,
   } = useAppStore()
   const { toast } = useToast()
 
@@ -74,6 +75,29 @@ export default function Index() {
   const [editForm, setEditForm] = useState(eventDetails)
 
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null)
+
+  // Script Silencioso para limpar datas "hardcoded" de dezembro antigas
+  const hasRunCleanup = useRef(false)
+  useEffect(() => {
+    if (user.isGovernance && participants.length > 0 && !hasRunCleanup.current) {
+      hasRunCleanup.current = true
+      
+      const badParticipants = participants.filter(p => 
+        p.attendingDates?.some(d => d.startsWith('2026-12'))
+      )
+      
+      if (badParticipants.length > 0) {
+        console.log(`[Limpeza Automática] Encontrados ${badParticipants.length} perfis com datas de Dezembro (hardcoded). Limpando...`)
+        badParticipants.forEach(async (p) => {
+          try {
+            await updateParticipant(p.id, { attendingDates: [], daysAttending: 0 })
+          } catch (err) {
+            console.error('Erro ao limpar datas do participante:', p.id)
+          }
+        })
+      }
+    }
+  }, [user.isGovernance, participants, updateParticipant])
 
   const activeAnnouncements = announcements
     .filter((a) => !a.archived)

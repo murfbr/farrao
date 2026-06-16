@@ -50,7 +50,6 @@ export default function RegisterProfile() {
   }, [eventDetails.startDate, eventDetails.endDate])
 
   const [formData, setFormData] = useState(() => {
-    const defaultDates = eventDays.slice(0, 3).map(day => format(day, 'yyyy-MM-dd'))
     return {
       name: user.name || '',
       members: user.members?.length > 0 ? user.members : [
@@ -63,8 +62,8 @@ export default function RegisterProfile() {
           restrictions: '',
         }
       ],
-      attendingDates: user.attendingDates || defaultDates,
-      daysAttending: user.attendingDates?.length || defaultDates.length,
+      attendingDates: user.attendingDates || [],
+      daysAttending: user.attendingDates?.length || 0,
     }
   })
 
