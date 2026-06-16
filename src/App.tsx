@@ -60,6 +60,7 @@ const MainApp = () => {
         <Route path="/voting" element={<Voting />} />
         <Route path="/finance" element={<Finance />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/profile/:participantId" element={<Profile />} />
         <Route path="/admin" element={<AdminInvites />} />
       </Route>
       <Route path="/register-profile" element={<RegisterProfile />} />

@@ -26,11 +26,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
+import { useParams, useNavigate } from 'react-router-dom'
 import { getInitials, cn } from '@/lib/utils'
 import useAppStore, { MemberCategory, ParticipantRecord } from '@/stores/useAppStore'
 
 export default function Profile() {
-  const { user, setUser, updateParticipant, eventDetails } = useAppStore()
+  const { participantId } = useParams()
+  const navigate = useNavigate()
+  const { user, setUser, updateParticipant, eventDetails, participants } = useAppStore()
   const { toast } = useToast()
 
   // Gerar datas dinâmicas do evento
@@ -50,7 +53,31 @@ export default function Profile() {
     return days
   }, [eventDetails.startDate, eventDetails.endDate])
 
-  const [formData, setFormData] = useState({ ...user })
+  // Find participant se o SuperAdmin estiver editando outra pessoa
+  const targetParticipant = useMemo(() => {
+    if (participantId && user.isSuperAdmin) {
+      return participants.find((p) => p.id === participantId)
+    }
+    return null
+  }, [participantId, user.isSuperAdmin, participants])
+
+  const initialData = useMemo(() => {
+    if (targetParticipant) {
+      return {
+        ...user,
+        id: targetParticipant.id,
+        name: targetParticipant.name,
+        members: targetParticipant.members || [],
+        hasConfirmed: targetParticipant.hasConfirmed,
+        daysAttending: targetParticipant.daysAttending,
+        attendingDates: targetParticipant.attendingDates || [],
+        photoUrl: '', // Nós não carregamos a photoUrl do participante
+      }
+    }
+    return user
+  }, [targetParticipant, user])
+
+  const [formData, setFormData] = useState(initialData)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasUnsavedChanges = useRef(false)
@@ -61,15 +88,17 @@ export default function Profile() {
   // Sincroniza os dados do servidor caso o usuário não tenha edições não salvas
   useEffect(() => {
     if (!hasUnsavedChanges.current) {
-      setFormData(user)
+      setFormData(initialData)
     }
-  }, [user])
+  }, [initialData])
 
-  const handleSave = useCallback(async (dataToSave: typeof user) => {
+  const handleSave = useCallback(async (dataToSave: typeof initialData) => {
     setSaveStatus('saving')
     try {
-      await setUser(dataToSave)
-      await updateParticipant(user.id, {
+      if (!targetParticipant) {
+        await setUser(dataToSave)
+      }
+      await updateParticipant(dataToSave.id, {
         name: dataToSave.name,
         members: dataToSave.members,
         daysAttending: dataToSave.daysAttending,
@@ -84,11 +113,11 @@ export default function Profile() {
       setSaveStatus('error')
       toast({
         title: 'Erro ao salvar',
-        description: 'Não foi possível salvar as informações automaticamente.',
+        description: 'Não foi possível salvar as informações.',
         variant: 'destructive',
       })
     }
-  }, [user.id, setUser, updateParticipant, toast])
+  }, [targetParticipant, setUser, updateParticipant, toast])
 
   // Debounced effect for auto-saving
   useEffect(() => {
@@ -192,10 +221,17 @@ export default function Profile() {
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in pb-20">
       <div className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-black font-display text-foreground tracking-tight">Minha Galera</h1>
+          <h1 className="text-4xl font-black font-display text-foreground tracking-tight">
+            {targetParticipant ? `Editando: ${targetParticipant.name}` : 'Minha Galera'}
+          </h1>
           <p className="text-foreground/60 text-lg mt-1 font-medium italic">
-            Gerencie sua tripulação para o Farrão 🥩
+            {targetParticipant ? 'Corrigindo informações como SuperAdmin 🛠️' : 'Gerencie sua tripulação para o Farrão 🥩'}
           </p>
+          {targetParticipant && (
+            <Button variant="link" onClick={() => navigate('/participants')} className="px-0 mt-2 h-auto text-primary">
+              &larr; Voltar para Lista de Participantes
+            </Button>
+          )}
         </div>
         
         {/* Status de Salvamento Inteligente */}
@@ -301,16 +337,18 @@ export default function Profile() {
                   </div>
                 </div>
               </div>
-              <ImageUploader
-                onUploadSuccess={(url) => handleChange('photoUrl', url)}
-                storagePath={(file) => `users/${user.id}/profile_${Date.now()}_${file.name}`}
-                maxSizeMB={0.5}
-                maxWidthOrHeight={800}
-                buttonContent={<><Camera className="w-5 h-5 mr-2" /> Alterar Foto de Perfil</>}
-                buttonVariant="outline"
-                buttonSize="default"
-                buttonClassName="border-primary/20 hover:bg-primary/5 text-primary font-black rounded-2xl h-11 px-6 shadow-sm transition-all hover:scale-105 active:scale-95"
-              />
+              {!targetParticipant && (
+                <ImageUploader
+                  onUploadSuccess={(url) => handleChange('photoUrl', url)}
+                  storagePath={(file) => `users/${user.id}/profile_${Date.now()}_${file.name}`}
+                  maxSizeMB={0.5}
+                  maxWidthOrHeight={800}
+                  buttonContent={<><Camera className="w-5 h-5 mr-2" /> Alterar Foto de Perfil</>}
+                  buttonVariant="outline"
+                  buttonSize="default"
+                  buttonClassName="border-primary/20 hover:bg-primary/5 text-primary font-black rounded-2xl h-11 px-6 shadow-sm transition-all hover:scale-105 active:scale-95"
+                />
+              )}
             </div>
           </div>
         </CardContent>

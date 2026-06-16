@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Users, Filter, Beer, DollarSign, Search } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Users, Filter, Beer, DollarSign, Search, Edit } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Table,
@@ -24,6 +25,7 @@ import { cn } from '@/lib/utils'
 
 export default function Participants() {
   const { participants, user, eventDetails } = useAppStore()
+  const navigate = useNavigate()
   const [filter, setFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
   const [confirmationFilter, setConfirmationFilter] = useState<string>('all')
@@ -32,6 +34,7 @@ export default function Participants() {
     const familyMembers = p.members || []
     return familyMembers.map((m) => ({
       ...m,
+      participantId: p.id,
       familyName: p.name,
       payments: p.payments || {},
       beverageStatus: p.beverageStatus,
@@ -197,6 +200,9 @@ export default function Participants() {
                     </span>
                   </TableHead>
                 )}
+                {user.isSuperAdmin && (
+                  <TableHead className="text-center font-bold text-foreground">Ações</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -275,6 +281,17 @@ export default function Participants() {
                             </React.Fragment>
                           ))}
                         </div>
+                      </TableCell>
+                    )}
+                    {user.isSuperAdmin && (
+                      <TableCell className="text-center">
+                        <button
+                          onClick={() => navigate(`/profile/${m.participantId}`)}
+                          className="p-2 text-primary hover:bg-primary/10 rounded-full transition-colors"
+                          title="Editar Perfil"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
                       </TableCell>
                     )}
                   </TableRow>
