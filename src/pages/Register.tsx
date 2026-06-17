@@ -5,16 +5,38 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { registerWithEmail } from '@/firebase/services'
 import { useToast } from '@/hooks/use-toast'
+import { Eye, EyeOff } from 'lucide-react'
 
 export default function Register() {
   const { toast } = useToast()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (password.length < 8) {
+      toast({
+        title: 'Senha muito curta',
+        description: 'A senha deve ter pelo menos 8 caracteres.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (password !== confirmPassword) {
+      toast({
+        title: 'Senhas incompatíveis',
+        description: 'As senhas não coincidem. Tente novamente.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setLoading(true)
     try {
       await registerWithEmail(email.toLowerCase(), password)
@@ -29,7 +51,7 @@ export default function Register() {
     } catch (err: any) {
       toast({
         title: 'Erro ao cadastrar',
-        description: 'Verifique se a senha tem mais de 6 caracteres ou se o email é válido.',
+        description: 'Verifique se a senha tem pelo menos 8 caracteres ou se o email é válido.',
         variant: 'destructive',
       })
     } finally {
@@ -62,15 +84,48 @@ export default function Register() {
           </div>
           <div className="space-y-2">
             <Label>Escolha uma Senha</Label>
-            <Input 
-              type="password" 
-              required 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              placeholder="mínimo 6 caracteres"
-              className="bg-white"
-              minLength={6}
-            />
+            <div className="relative">
+              <Input 
+                type={showPassword ? "text" : "password"}
+                required 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                placeholder="mínimo 8 caracteres"
+                className="bg-white pr-10"
+                minLength={8}
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)} 
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              A senha deve ter no mínimo 8 caracteres. Letras maiúsculas, minúsculas, números e símbolos são aceitos.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label>Repita a Senha</Label>
+            <div className="relative">
+              <Input 
+                type={showPassword ? "text" : "password"}
+                required 
+                value={confirmPassword} 
+                onChange={(e) => setConfirmPassword(e.target.value)} 
+                placeholder="confirme sua senha"
+                className="bg-white pr-10"
+                minLength={8}
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)} 
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
           <Button type="submit" disabled={loading} className="w-full font-bold text-base h-12 rounded-xl mt-4">
             {loading ? 'Criando Conta...' : 'Validar Convite e Entrar'}
