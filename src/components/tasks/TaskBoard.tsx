@@ -91,11 +91,11 @@ function TaskCard({
                 src={undefined}
               />
               <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
-                {getInitials(task.assignee || 'U')}
+                {task.assignee ? getInitials(task.assignee) : '?'}
               </AvatarFallback>
             </Avatar>
             <span className="text-xs text-foreground/60 font-bold truncate max-w-[100px]">
-              {task.assignee}
+              {task.assignee || 'Não atribuído'}
             </span>
           </div>
         </div>

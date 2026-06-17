@@ -41,7 +41,7 @@ export default function TaskDetailDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { tasks, addTask, updateTask, participants, user } = useAppStore()
+  const { tasks, addTask, updateTask, participants, user, groups } = useAppStore()
   const [data, setData] = useState<Partial<Task>>({})
   const [newItem, setNewItem] = useState('')
   const [newLink, setNewLink] = useState('')
@@ -59,7 +59,7 @@ export default function TaskDetailDialog({
           status: 'todo',
           priority: 'Média',
           groupId: groupId || '',
-          assigneeId: user.id,
+          assigneeId: 'unassigned',
           checklist: [],
           links: [],
           images: [],
@@ -73,14 +73,23 @@ export default function TaskDetailDialog({
 
   const handleSave = () => {
     if (!data.title?.trim() || !data.groupId) return
-    const assigneeName = participants.find((p) => p.id === data.assigneeId)?.name || user.name
+    
+    const actualAssigneeId = data.assigneeId === 'unassigned' ? '' : data.assigneeId
+    const assigneeName = actualAssigneeId 
+      ? (participants.find((p) => p.id === actualAssigneeId)?.name || '') 
+      : ''
+      
     if (taskId) {
-      updateTask(taskId, { ...data, assignee: assigneeName })
+      updateTask(taskId, { ...data, assigneeId: actualAssigneeId, assignee: assigneeName })
     } else {
-      addTask({ ...data, assignee: assigneeName } as Omit<Task, 'id'>)
+      addTask({ ...data, assigneeId: actualAssigneeId, assignee: assigneeName } as Omit<Task, 'id'>)
     }
     onOpenChange(false)
   }
+
+  // Filter participants to only those who are members of the selected group
+  const currentGroup = groups.find((g) => g.id === data.groupId)
+  const groupParticipants = participants.filter((p) => currentGroup?.memberIds.includes(p.id))
 
   const addChecklist = () => {
     if (newItem.trim()) {
@@ -201,14 +210,15 @@ export default function TaskDetailDialog({
               Responsável
             </Label>
             <Select
-              value={data.assigneeId || ''}
+              value={data.assigneeId || 'unassigned'}
               onValueChange={(val) => setData((p) => ({ ...p, assigneeId: val }))}
             >
               <SelectTrigger className="bg-white font-medium">
                 <SelectValue placeholder="Selecione..." />
               </SelectTrigger>
               <SelectContent>
-                {participants.map((p) => (
+                <SelectItem value="unassigned">Não atribuído</SelectItem>
+                {groupParticipants.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
                   </SelectItem>
