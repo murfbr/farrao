@@ -119,7 +119,7 @@ export default function Finance() {
 
   const handleExportCSV = () => {
     const installmentHeaders = eventDetails.installments.map((inst) => inst.label).join(',')
-    const header = `Família,${installmentHeaders},Status Bebidas,Qtd Membros,Custo Base,Custo Bebidas,Total\n`
+    const header = `Responsável,${installmentHeaders},Status Bebidas,Qtd Membros,Custo Base,Custo Bebidas,Total\n`
     const rows = participants
       .map((p) => {
         const installmentStatuses = eventDetails.installments
@@ -198,7 +198,7 @@ export default function Finance() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-1 shadow-sm border-amber-200 bg-white/80 backdrop-blur-sm rounded-2xl flex flex-col">
           <CardHeader className="bg-orange-50/50 border-b border-amber-100">
-            <CardTitle className="font-display font-bold">Resumo da Sua Família</CardTitle>
+            <CardTitle className="font-display font-bold">Seu Resumo Financeiro</CardTitle>
             <CardDescription className="font-medium text-foreground/60">
               Valor estimado baseado nas suas configurações de perfil.
             </CardDescription>
@@ -250,7 +250,7 @@ export default function Finance() {
             <Table>
               <TableHeader className="bg-white">
                 <TableRow className="border-amber-100">
-                  <TableHead className="w-[180px] font-bold text-foreground">Família</TableHead>
+                  <TableHead className="w-[180px] font-bold text-foreground">Responsável</TableHead>
                   {eventDetails.installments.map((inst) => (
                     <TableHead key={inst.id} className="text-center font-bold text-foreground min-w-[100px]">
                       {inst.label}
@@ -452,7 +452,7 @@ export default function Finance() {
           <Table>
             <TableHeader className="bg-white">
               <TableRow className="border-amber-100">
-                <TableHead className="w-[180px] font-bold text-foreground">Família</TableHead>
+                <TableHead className="w-[180px] font-bold text-foreground">Responsável</TableHead>
                 {eventDetails.installments.map((inst) => (
                   <TableHead key={inst.id} className="text-center font-bold text-foreground min-w-[80px]">
                     {inst.label}
@@ -576,7 +576,7 @@ export default function Finance() {
             <Table>
               <TableHeader className="bg-emerald-50/50">
                 <TableRow className="border-emerald-100">
-                  <TableHead className="font-bold text-emerald-900 w-[200px]">Família</TableHead>
+                  <TableHead className="font-bold text-emerald-900 w-[200px]">Responsável</TableHead>
                   <TableHead className="text-center font-bold text-emerald-900">
                     Adultos (Chopp)
                   </TableHead>

@@ -222,7 +222,7 @@ export default function Profile() {
       <div className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-4xl font-black font-display text-foreground tracking-tight">
-            {targetParticipant ? `Editando: ${targetParticipant.name}` : 'Minha Galera'}
+            {targetParticipant ? `Editando: ${targetParticipant.name}` : 'Meus Acompanhantes'}
           </h1>
           <p className="text-foreground/60 text-lg mt-1 font-medium italic">
             {targetParticipant ? 'Corrigindo informações como SuperAdmin 🛠️' : 'Gerencie sua tripulação para o Farrão 🥩'}
@@ -301,10 +301,10 @@ export default function Profile() {
             <div className="p-2 bg-primary/10 rounded-xl">
               <Users className="w-6 h-6" />
             </div>
-            <span>Perfil do Titular</span>
+            <span>Perfil do Responsável</span>
           </CardTitle>
           <CardDescription className="text-base font-bold text-primary/60">
-            Quem lidera esta família no app
+            Responsável pelos dados e pagamentos do grupo
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8 p-10">
@@ -323,7 +323,7 @@ export default function Profile() {
             <div className="space-y-4 flex flex-col items-center sm:items-start flex-1 w-full">
               <div className="space-y-2 w-full">
                 <Label htmlFor="name" className="font-bold text-foreground/70 ml-1">
-                  Nome do Representante / Família
+                  Nome do Responsável
                 </Label>
                 <div className="relative">
                   <Input
@@ -361,7 +361,7 @@ export default function Profile() {
               <div className="p-2 bg-secondary/10 rounded-xl">
                 <Users className="w-6 h-6" />
               </div>
-              <span>Membros da Galera</span>
+              <span>Acompanhantes</span>
             </CardTitle>
             <CardDescription className="text-base font-bold text-secondary/60 mt-1">
               Quem está indo com você?
@@ -386,7 +386,7 @@ export default function Profile() {
             >
               {index === 0 && (
                 <div className="absolute -top-3 left-8 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full shadow-lg">
-                  Titular / Responsável
+                  Responsável
                 </div>
               )}
 

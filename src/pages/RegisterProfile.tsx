@@ -204,30 +204,30 @@ export default function RegisterProfile() {
               Seu Perfil Principal
             </CardTitle>
             <CardDescription className="text-center font-bold text-base text-primary/60">
-              Nome que aparecerá na sua família
+              Você é o Responsável por este grupo
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-10 px-8 pb-10">
             <div className="space-y-3">
               <Label htmlFor="main-name" className="font-bold text-lg text-foreground/80 ml-1">
-                Nome da Família / Titular *
+                Seu Nome (Responsável) *
               </Label>
               <div className="relative group">
                 <Input
                   id="main-name"
                   value={formData.name === 'Convidado' ? '' : formData.name}
                   onChange={(e) => handleChange('name', e.target.value)}
-                  placeholder="Ex: Família Silva ou João Silva"
+                  placeholder="Ex: João Silva"
                   className="bg-white border-amber-200 h-14 text-xl focus-visible:ring-primary rounded-2xl px-6 font-bold shadow-inner transition-all group-hover:border-primary/30"
                 />
                 {formData.name && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black uppercase tracking-widest text-primary/40 bg-primary/5 px-2 py-1 rounded-md">
-                    Titular
+                    Responsável
                   </div>
                 )}
               </div>
               <p className="text-xs font-medium text-muted-foreground ml-1">
-                Isso também atualizará seu nome na lista da sua galera abaixo.
+                Isso também atualizará seu nome na lista de acompanhantes abaixo.
               </p>
             </div>
           </CardContent>
@@ -240,10 +240,10 @@ export default function RegisterProfile() {
                 <div className="p-2 bg-secondary/10 rounded-xl">
                   <Users className="w-6 h-6 text-secondary" />
                 </div>
-                Sua Galera *
+                Seus Acompanhantes *
               </CardTitle>
               <CardDescription className="font-bold text-secondary/60">
-                Adicione todos os membros que vão com você
+                Adicione as pessoas que vão com você
               </CardDescription>
             </div>
             <Button
@@ -255,6 +255,14 @@ export default function RegisterProfile() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-8 p-8">
+            <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl text-amber-900 shadow-sm">
+              <p className="font-bold text-sm leading-relaxed">
+                ⚠️ <span className="font-black uppercase tracking-wider">Atenção Especial:</span><br />
+                Adicione aqui <strong className="font-black text-amber-700">APENAS</strong> as pessoas que <strong className="font-black text-amber-700">NÃO</strong> farão o próprio cadastro no app (ex: crianças, cônjuge que não usa o sistema). 
+                Se a pessoa for baixar o app e se cadastrar, não a adicione na sua lista para evitar cobranças duplicadas.
+              </p>
+            </div>
+
             {formData.members.map((m, index) => (
               <div
                 key={m.id}
@@ -265,7 +273,7 @@ export default function RegisterProfile() {
               >
                 {index === 0 && (
                   <div className="absolute -top-3 left-6 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full shadow-lg">
-                    Titular / Responsável
+                    Responsável
                   </div>
                 )}
                 
@@ -461,7 +469,7 @@ export default function RegisterProfile() {
             Concluir meu Perfil 🎉
           </Button>
           <p className="text-center text-sm font-bold text-muted-foreground mt-6 uppercase tracking-widest opacity-50">
-            Farrão 2026 • Diversão em Família
+            Farrão 2026
           </p>
         </div>
       </div>

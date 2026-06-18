@@ -39,6 +39,15 @@ export type Group = {
 
 export type TaskStatus = 'todo' | 'doing' | 'done'
 export type TaskChecklistItem = { id: string; text: string; completed: boolean }
+
+export type TaskComment = {
+  id: string
+  text: string
+  author: string
+  authorId: string
+  date: string
+}
+
 export type Task = {
   id: string
   groupId: string
@@ -51,6 +60,11 @@ export type Task = {
   checklist?: TaskChecklistItem[]
   images?: string[]
   links?: string[]
+  order?: number
+  color?: string
+  dueDate?: string
+  comments?: TaskComment[]
+  creatorId?: string
 }
 
 export type PollOption = { id: string; text: string; votes: number }
@@ -165,6 +179,7 @@ type AppState = {
   removeMemberFromGroup: (groupId: string, userId: string) => void
   tasks: Task[]
   updateTask: (id: string, updates: Partial<Task>) => void
+  updateTaskOrders: (taskUpdates: {id: string, updates: Partial<Task>}[]) => void
   moveTask: (id: string, newStatus: TaskStatus) => void
   addTask: (task: Omit<Task, 'id'>) => void
   polls: Poll[]
@@ -563,6 +578,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await db.updateTask(id, updates)
   }
 
+  const updateTaskOrders = async (taskUpdates: {id: string, updates: Partial<Task>}[]) => {
+    // Para simplificar, atualiza sequencialmente. Num app real de grande escala usaríamos batch
+    for(const u of taskUpdates) {
+      await db.updateTask(u.id, u.updates)
+    }
+  }
+
   const moveTask = async (id: string, newStatus: TaskStatus) => {
     await db.updateTask(id, { status: newStatus })
   }
@@ -676,6 +698,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         removeMemberFromGroup,
         tasks,
         updateTask,
+        updateTaskOrders,
         moveTask,
         addTask,
         polls,

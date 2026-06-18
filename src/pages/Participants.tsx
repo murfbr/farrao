@@ -147,7 +147,7 @@ export default function Participants() {
           <div className="relative w-full md:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
             <Input
-              placeholder="Buscar por nome ou família..."
+              placeholder="Buscar por participante ou responsável..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 bg-white border-amber-200"
@@ -185,7 +185,7 @@ export default function Participants() {
             <TableHeader className="bg-white">
               <TableRow className="border-amber-100">
                 <TableHead className="font-bold text-foreground">Nome Completo</TableHead>
-                <TableHead className="font-bold text-foreground">Família Representante</TableHead>
+                <TableHead className="font-bold text-foreground">Responsável</TableHead>
                 <TableHead className="font-bold text-foreground">Categoria</TableHead>
                 <TableHead className="text-center font-bold text-foreground">Presença</TableHead>
                 <TableHead className="text-center font-bold text-foreground">Confirmado</TableHead>
@@ -196,7 +196,7 @@ export default function Participants() {
                   <TableHead className="text-center font-bold text-foreground">
                     <span className="flex items-center justify-center gap-1">
                       <DollarSign className="w-4 h-4 text-red-500" />
-                      Status (Família)
+                      Status do Grupo
                     </span>
                   </TableHead>
                 )}
