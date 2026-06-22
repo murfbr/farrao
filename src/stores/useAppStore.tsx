@@ -124,6 +124,8 @@ export type EventDetails = {
   installments: InstallmentConfig[]
   backgroundImage?: string
   venuePhotos?: string[]
+  pricingTiers?: PricingTiers
+  beverageTotal?: number
 }
 
 export type InstallmentConfig = {
@@ -364,8 +366,18 @@ const AppContext = createContext<AppState | undefined>(undefined)
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUserState] = useState<UserProfile>(defaultUser)
   const [participants, setParticipants] = useState<ParticipantRecord[]>([])
-  const [pricingTiers, setPricingTiers] = useState<PricingTiers>(defaultPricingTiers)
-  const [beverageTotal, setBeverageTotal] = useState<number>(0)
+  const [pricingTiers, setPricingTiersState] = useState<PricingTiers>(defaultPricingTiers)
+  const [beverageTotal, setBeverageTotalState] = useState<number>(0)
+
+  const setPricingTiers = async (tiers: PricingTiers) => {
+    setPricingTiersState(tiers)
+    await db.updateEventDetails({ pricingTiers: tiers })
+  }
+
+  const setBeverageTotal = async (total: number) => {
+    setBeverageTotalState(total)
+    await db.updateEventDetails({ beverageTotal: total })
+  }
 
   const [groups, setGroups] = useState<Group[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
@@ -456,6 +468,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setEventDetails(data)
         if (data.venuePhotos) {
           setVenuePhotos(data.venuePhotos)
+        }
+        if (data.pricingTiers) {
+          setPricingTiersState(data.pricingTiers)
+        }
+        if (data.beverageTotal !== undefined) {
+          setBeverageTotalState(data.beverageTotal)
         }
       } else {
         // Fallback limpo caso o banco de dados esteja zerado

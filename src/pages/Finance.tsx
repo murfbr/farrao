@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useMemo, useRef, useState, useEffect } from 'react'
 import { isBefore, parseISO, startOfDay } from 'date-fns'
 import {
   CheckCircle2,
@@ -40,6 +40,15 @@ import { useToast } from '@/hooks/use-toast'
 import useAppStore, { ParticipantRecord, FinanceStatus } from '@/stores/useAppStore'
 import { cn } from '@/lib/utils'
 
+const formatCurrency = (val: number) => {
+  return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+const parseCurrency = (val: string) => {
+  const digits = val.replace(/\D/g, '')
+  return digits ? parseInt(digits, 10) / 100 : 0
+}
+
 const getStatusIcon = (status: string, dueDate?: string) => {
   const isLate = status === 'pending' && dueDate && isBefore(parseISO(dueDate), startOfDay(new Date()))
 
@@ -79,10 +88,65 @@ export default function Finance() {
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [isEditing, setIsEditing] = useState(false)
+
+  const [localTiers, setLocalTiers] = useState({
+    adults: formatCurrency(pricingTiers.adults),
+    childrenUnder10: formatCurrency(pricingTiers.childrenUnder10),
+    children11to16: formatCurrency(pricingTiers.children11to16),
+    nannies: formatCurrency(pricingTiers.nannies),
+  })
+  const [localBeverage, setLocalBeverage] = useState(formatCurrency(beverageTotal))
+
+  useEffect(() => {
+    if (!isEditing) {
+      setLocalTiers({
+        adults: formatCurrency(pricingTiers.adults),
+        childrenUnder10: formatCurrency(pricingTiers.childrenUnder10),
+        children11to16: formatCurrency(pricingTiers.children11to16),
+        nannies: formatCurrency(pricingTiers.nannies),
+      })
+    }
+  }, [pricingTiers, isEditing])
+
+  useEffect(() => {
+    if (!isEditing) {
+      setLocalBeverage(formatCurrency(beverageTotal))
+    }
+  }, [beverageTotal, isEditing])
+
+  const handleTierChange = (field: keyof typeof localTiers) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const parsed = parseCurrency(e.target.value)
+    setLocalTiers((prev) => ({
+      ...prev,
+      [field]: formatCurrency(parsed),
+    }))
+  }
+
+  const handleTierBlur = () => {
+    setIsEditing(false)
+    setPricingTiers({
+      adults: parseCurrency(localTiers.adults),
+      childrenUnder10: parseCurrency(localTiers.childrenUnder10),
+      children11to16: parseCurrency(localTiers.children11to16),
+      nannies: parseCurrency(localTiers.nannies),
+    })
+  }
+
+  const handleBeverageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const parsed = parseCurrency(e.target.value)
+    setLocalBeverage(formatCurrency(parsed))
+  }
+
+  const handleBeverageBlur = () => {
+    setIsEditing(false)
+    setBeverageTotal(parseCurrency(localBeverage))
+  }
+
   const totalDrinkingDays = useMemo(
     () =>
       participants.reduce(
-        (acc, p) => acc + p.members.filter((m) => m.isDrinking).length * p.daysAttending,
+        (acc, p) => acc + p.members.filter((m) => m.category === 'adult' && m.isDrinking).length * p.daysAttending,
         0,
       ),
     [participants],
@@ -109,7 +173,7 @@ export default function Finance() {
   }
 
   const calculateBeverageFee = (p: ParticipantRecord) => {
-    const drinkingAdults = p.members.filter((m) => m.isDrinking).length
+    const drinkingAdults = p.members.filter((m) => m.category === 'adult' && m.isDrinking).length
     return drinkingAdults * p.daysAttending * beveragePerDay
   }
 
@@ -206,7 +270,7 @@ export default function Finance() {
           <CardContent className="flex-1 flex flex-col p-6 space-y-4">
             <div className="flex justify-between items-center border-b border-amber-100 pb-3">
               <span className="font-bold text-foreground/70 flex items-center">
-                <Users className="w-4 h-4 mr-2" /> Hospedagem / Festa
+                <Users className="w-4 h-4 mr-2" /> Hospedagem / Alimentação
               </span>
               <span className="font-bold text-lg">
                 R$ {(myBaseFee || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -241,7 +305,7 @@ export default function Finance() {
             <div>
               <CardTitle className="font-display font-bold text-xl">Situação da Vakinha</CardTitle>
               <CardDescription className="font-medium mt-1">
-                Acompanhamento das parcelas da festa principal (Hospedagem).
+                Acompanhamento das parcelas da festa principal (Hospedagem / Alimentação).
               </CardDescription>
             </div>
             {user.isGovernance && <CSVButtons />}
@@ -322,45 +386,63 @@ export default function Finance() {
           <CardContent className="pt-6 grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="font-bold">Adulto</Label>
-              <Input
-                type="number"
-                value={pricingTiers.adults}
-                onChange={(e) => setPricingTiers({ ...pricingTiers, adults: Number(e.target.value) })}
-                className="font-bold border-amber-200"
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 font-bold">R$</span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={localTiers.adults}
+                  onFocus={() => setIsEditing(true)}
+                  onChange={handleTierChange('adults')}
+                  onBlur={handleTierBlur}
+                  className="font-bold border-amber-200 pl-9"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label className="font-bold">Crianças &lt; 10</Label>
-              <Input
-                type="number"
-                value={pricingTiers.childrenUnder10}
-                onChange={(e) =>
-                  setPricingTiers({ ...pricingTiers, childrenUnder10: Number(e.target.value) })
-                }
-                className="font-bold border-amber-200"
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 font-bold">R$</span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={localTiers.childrenUnder10}
+                  onFocus={() => setIsEditing(true)}
+                  onChange={handleTierChange('childrenUnder10')}
+                  onBlur={handleTierBlur}
+                  className="font-bold border-amber-200 pl-9"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label className="font-bold">Crianças 11 a 16</Label>
-              <Input
-                type="number"
-                value={pricingTiers.children11to16}
-                onChange={(e) =>
-                  setPricingTiers({ ...pricingTiers, children11to16: Number(e.target.value) })
-                }
-                className="font-bold border-amber-200"
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 font-bold">R$</span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={localTiers.children11to16}
+                  onFocus={() => setIsEditing(true)}
+                  onChange={handleTierChange('children11to16')}
+                  onBlur={handleTierBlur}
+                  className="font-bold border-amber-200 pl-9"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label className="font-bold">Staff / Babá</Label>
-              <Input
-                type="number"
-                value={pricingTiers.nannies}
-                onChange={(e) =>
-                  setPricingTiers({ ...pricingTiers, nannies: Number(e.target.value) })
-                }
-                className="font-bold border-amber-200"
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 font-bold">R$</span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={localTiers.nannies}
+                  onFocus={() => setIsEditing(true)}
+                  onChange={handleTierChange('nannies')}
+                  onBlur={handleTierBlur}
+                  className="font-bold border-amber-200 pl-9"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -541,12 +623,18 @@ export default function Finance() {
                 <Label className="font-bold text-emerald-900 text-base">
                   Custo Total Estimado de Bebidas (R$)
                 </Label>
-                <Input
-                  type="number"
-                  value={beverageTotal}
-                  onChange={(e) => setBeverageTotal(Number(e.target.value))}
-                  className="font-black text-2xl h-14 border-emerald-300 bg-white text-emerald-700"
-                />
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-700/50 font-black text-2xl">R$</span>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={localBeverage}
+                    onFocus={() => setIsEditing(true)}
+                    onChange={handleBeverageChange}
+                    onBlur={handleBeverageBlur}
+                    className="font-black text-2xl h-14 border-emerald-300 bg-white text-emerald-700 pl-14"
+                  />
+                </div>
               </div>
             ) : (
               <div className="flex-1">
@@ -560,11 +648,11 @@ export default function Finance() {
             )}
             <div className="flex gap-4 w-full md:w-auto">
               <div className="bg-white p-4 rounded-xl border border-emerald-100 text-center flex-1 md:px-6 shadow-sm">
-                <p className="text-xs font-bold text-emerald-600/70 uppercase mb-1">Dias Totais</p>
+                <p className="text-xs font-bold text-emerald-600/70 uppercase mb-1">Total de Diárias</p>
                 <p className="text-2xl font-black text-emerald-700">{totalDrinkingDays}</p>
               </div>
               <div className="bg-white p-4 rounded-xl border border-emerald-100 text-center flex-1 md:px-6 shadow-sm">
-                <p className="text-xs font-bold text-emerald-600/70 uppercase mb-1">Custo / Dia</p>
+                <p className="text-xs font-bold text-emerald-600/70 uppercase mb-1">Custo / Diária</p>
                 <p className="text-2xl font-black text-emerald-600">
                   R$ {(beveragePerDay || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>
@@ -590,11 +678,13 @@ export default function Finance() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participants.map((p) => (
+                {participants
+                  .filter((p) => p.members.some((m) => m.category === 'adult' && m.isDrinking))
+                  .map((p) => (
                   <TableRow key={p.id} className="border-emerald-50 hover:bg-emerald-50/30">
                     <TableCell className="font-bold text-foreground py-4 pl-4">{p.name}</TableCell>
                     <TableCell className="text-center font-medium">
-                      {p.members.filter((m) => m.isDrinking).length}
+                      {p.members.filter((m) => m.category === 'adult' && m.isDrinking).length}
                     </TableCell>
                     <TableCell className="text-center font-medium">{p.daysAttending}</TableCell>
                     <TableCell className="text-center">
