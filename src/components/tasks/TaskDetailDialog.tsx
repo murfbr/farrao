@@ -61,7 +61,7 @@ export default function TaskDetailDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { tasks, addTask, updateTask, participants, user, groups } = useAppStore()
+  const { tasks, addTask, updateTask, deleteTask, participants, user, groups } = useAppStore()
   const [data, setData] = useState<Partial<Task>>({})
   const [newItem, setNewItem] = useState('')
   const [newLink, setNewLink] = useState('')
@@ -99,6 +99,7 @@ export default function TaskDetailDialog({
   }, [open, taskId, groupId, tasks, user.id])
 
   const canEdit = !taskId || user.isSuperAdmin || data.creatorId === user.id || data.assigneeId === user.id
+  const canDelete = taskId && (user.isSuperAdmin || data.creatorId === user.id)
 
   const handleSave = () => {
     if (!canEdit) {
@@ -119,6 +120,14 @@ export default function TaskDetailDialog({
       addTask({ ...data, assigneeId: actualAssigneeId, assignee: assigneeName } as Omit<Task, 'id'>)
     }
     onOpenChange(false)
+  }
+
+  const handleDelete = () => {
+    if (!taskId) return
+    if (window.confirm('Tem certeza que deseja apagar esta tarefa? Esta ação não pode ser desfeita.')) {
+      deleteTask(taskId)
+      onOpenChange(false)
+    }
   }
 
   // Filter participants to only those who are members of the selected group
@@ -600,7 +609,16 @@ export default function TaskDetailDialog({
           </div>
 
         </div>
-        <DialogFooter className="p-4 border-t border-amber-100 bg-white">
+        <DialogFooter className="p-4 border-t border-amber-100 bg-white flex sm:justify-between items-center gap-4">
+          {canDelete ? (
+            <Button
+              variant="outline"
+              className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 font-bold"
+              onClick={handleDelete}
+            >
+              Apagar Tarefa
+            </Button>
+          ) : <div />}
           <Button
             onClick={handleSave}
             disabled={!canEdit}

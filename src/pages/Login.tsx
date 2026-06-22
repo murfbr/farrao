@@ -18,9 +18,19 @@ export default function Login() {
     try {
       await loginWithEmail(email.toLowerCase(), password)
     } catch (err: any) {
+      console.error("Firebase auth error:", err);
+      let errorMessage = 'Email não autorizado ou senha incorreta.';
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        errorMessage = 'Nenhuma conta encontrada ou credenciais inválidas. Verifique seu email e senha.';
+      } else if (err.code === 'auth/wrong-password') {
+        errorMessage = 'Senha incorreta.';
+      } else if (err.code === 'auth/too-many-requests') {
+        errorMessage = 'Muitas tentativas falhas. Tente novamente mais tarde.';
+      }
+
       toast({
         title: 'Acesso Negado',
-        description: 'Email não autorizado ou senha incorreta.',
+        description: errorMessage,
         variant: 'destructive',
       })
     } finally {

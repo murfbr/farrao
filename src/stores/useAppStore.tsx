@@ -180,6 +180,7 @@ type AppState = {
   tasks: Task[]
   updateTask: (id: string, updates: Partial<Task>) => void
   updateTaskOrders: (taskUpdates: {id: string, updates: Partial<Task>}[]) => void
+  deleteTask: (id: string) => void
   moveTask: (id: string, newStatus: TaskStatus) => void
   addTask: (task: Omit<Task, 'id'>) => void
   polls: Poll[]
@@ -585,6 +586,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }
 
+  const deleteTask = async (id: string) => {
+    await db.deleteTask(id)
+  }
+
   const moveTask = async (id: string, newStatus: TaskStatus) => {
     await db.updateTask(id, { status: newStatus })
   }
@@ -699,6 +704,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         tasks,
         updateTask,
         updateTaskOrders,
+        deleteTask,
         moveTask,
         addTask,
         polls,

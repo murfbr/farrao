@@ -49,9 +49,21 @@ export default function Register() {
       })
       navigate('/register-profile')
     } catch (err: any) {
+      console.error("Firebase auth error:", err);
+      let errorMessage = 'Verifique se a senha tem pelo menos 8 caracteres ou se o email é válido.'
+      if (err.code === 'auth/email-already-in-use') {
+         errorMessage = 'Este email já possui conta criada! Por favor, volte para a tela inicial e faça login.'
+      } else if (err.code === 'auth/invalid-email') {
+         errorMessage = 'Formato de email inválido.'
+      } else if (err.code === 'auth/weak-password') {
+         errorMessage = 'A senha é muito fraca. Escolha uma senha mais segura.'
+      } else if (err.code === 'auth/operation-not-allowed') {
+         errorMessage = 'Login com email/senha está desativado no Firebase.'
+      }
+
       toast({
         title: 'Erro ao cadastrar',
-        description: 'Verifique se a senha tem pelo menos 8 caracteres ou se o email é válido.',
+        description: errorMessage,
         variant: 'destructive',
       })
     } finally {

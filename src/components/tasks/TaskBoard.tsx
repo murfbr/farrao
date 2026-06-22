@@ -66,7 +66,7 @@ function TaskCard({
   index: number
   onClick: () => void
 }) {
-  const { user, updateTask, participants } = useAppStore()
+  const { user, updateTask, deleteTask, participants } = useAppStore()
   const { toast } = useToast()
 
   const checklistTotal = task.checklist?.length || 0
@@ -76,6 +76,7 @@ function TaskCard({
   const commentCount = task.comments?.length || 0
 
   const canEditTask = user.isSuperAdmin || task.creatorId === user.id || task.assigneeId === user.id
+  const canDeleteTask = user.isSuperAdmin || task.creatorId === user.id
 
   const handleQuickComplete = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -93,10 +94,8 @@ function TaskCard({
   const handleQuickDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (window.confirm('Tem certeza que deseja apagar esta tarefa?')) {
-      // Como não temos um deleteTask exposto, vamos usar uma gambiarra com status ou precisamos dele no appStore
-      // Para o escopo atual, vamos assumir que o db permite ou não apagar, mas o useAppStore não tem deleteTask exportado.
-      // Vou apenas atualizar para um status inválido ou alertar. Vou adicionar deleteTask no useAppStore depois.
-      toast({ title: 'Não é possível apagar agora.', variant: 'destructive' })
+      deleteTask(task.id)
+      toast({ title: 'Tarefa apagada.' })
     }
   }
 
@@ -129,6 +128,11 @@ function TaskCard({
             {task.assigneeId !== user.id && (
               <Button size="icon" variant="ghost" className="h-6 w-6 text-blue-600 hover:bg-blue-50" onClick={handleQuickAssign} title="Assumir">
                 <UserPlus className="w-3.5 h-3.5" />
+              </Button>
+            )}
+            {canDeleteTask && (
+              <Button size="icon" variant="ghost" className="h-6 w-6 text-red-600 hover:bg-red-50" onClick={handleQuickDelete} title="Apagar">
+                <Trash2 className="w-3.5 h-3.5" />
               </Button>
             )}
           </div>
