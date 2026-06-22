@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { Save, Camera, Users, HandPlatter, X, Plus, Calendar, CheckCircle2, RotateCw, AlertCircle, Beer, Leaf, ChevronRight, CalendarCheck2 } from 'lucide-react'
+import { Save, Camera, Users, HandPlatter, X, Plus, Calendar, CheckCircle2, RotateCw, AlertCircle, Beer, Leaf, ChevronRight, CalendarCheck2, Trash2 } from 'lucide-react'
 import { format, addDays, differenceInDays, parseISO, isSameDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
@@ -384,11 +384,29 @@ export default function Profile() {
                 index === 0 ? "border-primary/20 bg-primary/[0.02]" : "border-amber-100 bg-white shadow-sm"
               )}
             >
-              {index === 0 && (
-                <div className="absolute -top-3 left-8 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full shadow-lg">
-                  Responsável
-                </div>
-              )}
+              <div className="flex justify-between items-center mb-[-0.5rem]">
+                {index === 0 ? (
+                  <div className="bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full shadow-lg">
+                    Responsável
+                  </div>
+                ) : (
+                  <div className="bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full">
+                    Dependente
+                  </div>
+                )}
+                
+                {index > 0 && (
+                  <Button
+                    variant="ghost"
+                    className="text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors h-8 px-3"
+                    onClick={() => removeMember(m.id)}
+                    title="Remover Dependente"
+                  >
+                    <Trash2 className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline font-bold uppercase text-xs tracking-wider">Remover</span>
+                  </Button>
+                )}
+              </div>
 
               <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6">
                 <div className="w-full flex-1 space-y-2">
@@ -425,19 +443,6 @@ export default function Profile() {
                       <SelectItem value="nanny" className="font-bold py-3 text-sm">Babá / Staff</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                
-                <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                   {index > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors order-last sm:order-none"
-                      onClick={() => removeMember(m.id)}
-                    >
-                      <X className="w-6 h-6 border-2 border-red-100 rounded-full p-1" />
-                    </Button>
-                  )}
                 </div>
               </div>
 

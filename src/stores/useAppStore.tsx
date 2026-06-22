@@ -169,6 +169,7 @@ type AppState = {
 
   participants: ParticipantRecord[]
   updateParticipant: (id: string, updates: Partial<ParticipantRecord>) => void
+  deleteUserChain: (id: string) => void
 
   groups: Group[]
   joinGroup: (groupId: string) => void
@@ -507,6 +508,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await db.updateEventUser(id, updates)
   }
 
+  const deleteUserChain = async (id: string) => {
+    await db.deleteParticipantChain(id)
+  }
+
   const joinGroup = async (groupId: string) => {
     const group = groups.find((g) => g.id === groupId)
     if (group && !group.memberIds.includes(user.id)) {
@@ -694,6 +699,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setBeverageTotal,
         participants,
         updateParticipant,
+        deleteUserChain,
         groups,
         joinGroup,
         addGroup,

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Save, Users, X, Plus, Calendar, Beer, Leaf, CheckCircle2, CalendarCheck2 } from 'lucide-react'
+import { Save, Users, X, Plus, Calendar, Beer, Leaf, CheckCircle2, CalendarCheck2, Trash2 } from 'lucide-react'
 import { format, addDays, differenceInDays, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
@@ -271,22 +271,29 @@ export default function RegisterProfile() {
                   index === 0 ? "border-primary/20 bg-primary/[0.02]" : "border-amber-100"
                 )}
               >
-                {index === 0 && (
-                  <div className="absolute -top-3 left-6 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full shadow-lg">
+              <div className="flex justify-between items-center mb-[-0.5rem]">
+                {index === 0 ? (
+                  <div className="bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full shadow-lg">
                     Responsável
+                  </div>
+                ) : (
+                  <div className="bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full">
+                    Dependente
                   </div>
                 )}
                 
                 {index > 0 && (
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="absolute top-4 right-4 text-muted-foreground hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
+                    className="text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors h-8 px-3"
                     onClick={() => removeMember(m.id)}
+                    title="Remover Dependente"
                   >
-                    <X className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline font-bold uppercase text-xs tracking-wider">Remover</span>
                   </Button>
                 )}
+              </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, Filter, Beer, DollarSign, Search, Edit } from 'lucide-react'
+import { Users, Filter, Beer, DollarSign, Search, Edit, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Table,
@@ -22,9 +22,11 @@ import { Badge } from '@/components/ui/badge'
 import { isBefore, parseISO, startOfDay, format } from 'date-fns'
 import useAppStore, { MemberCategory, FinanceStatus } from '@/stores/useAppStore'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 export default function Participants() {
-  const { participants, user, eventDetails } = useAppStore()
+  const { participants, user, eventDetails, deleteUserChain } = useAppStore()
+  const { toast } = useToast()
   const navigate = useNavigate()
   const [filter, setFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
@@ -285,13 +287,29 @@ export default function Participants() {
                     )}
                     {user.isSuperAdmin && (
                       <TableCell className="text-center">
-                        <button
-                          onClick={() => navigate(`/profile/${m.participantId}`)}
-                          className="p-2 text-primary hover:bg-primary/10 rounded-full transition-colors"
-                          title="Editar Perfil"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => navigate(`/profile/${m.participantId}`)}
+                            className="p-2 text-primary hover:bg-primary/10 rounded-full transition-colors"
+                            title="Editar Perfil"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          {participants.find(p => p.id === m.participantId)?.members?.[0]?.id === m.id && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Tem certeza que deseja DELETAR TODO O CADASTRO de ${m.name} e sua família?\n\nEles serão removidos dos grupos, tarefas serão desatribuídas e eles terão que fazer o onboarding do zero se entrarem de novo.`)) {
+                                  deleteUserChain(m.participantId)
+                                  toast({ title: 'Conta da família deletada.' })
+                                }
+                              }}
+                              className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                              title="Deletar Cadastro (Toda a Família)"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>

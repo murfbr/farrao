@@ -126,6 +126,40 @@ export const subscribeToAllEventUsers = (callback: (data: ParticipantRecord[]) =
   })
 }
 
+export const deleteParticipantChain = async (userId: string) => {
+  // 1. Remove user from groups
+  const participantDoc = await getDoc(doc(db, 'events', EVENT_ID, 'participants', userId))
+  if (participantDoc.exists()) {
+    const data = participantDoc.data() as ParticipantRecord
+    if (data.groupIds) {
+      for (const groupId of data.groupIds) {
+        const groupRef = doc(db, 'events', EVENT_ID, 'groups', groupId)
+        const groupDoc = await getDoc(groupRef)
+        if (groupDoc.exists()) {
+          const groupData = groupDoc.data() as Group
+          const newMemberIds = groupData.memberIds.filter((id) => id !== userId)
+          await updateDoc(groupRef, { memberIds: newMemberIds })
+        }
+      }
+    }
+  }
+
+  // 2. Unassign tasks
+  const tasksRef = collection(db, 'events', EVENT_ID, 'tasks')
+  const q = query(tasksRef, where('assigneeId', '==', userId))
+  const tasksSnap = await getDocs(q)
+  const updatePromises = tasksSnap.docs.map((tDoc) =>
+    updateDoc(doc(db, 'events', EVENT_ID, 'tasks', tDoc.id), { assignee: '', assigneeId: 'unassigned' })
+  )
+  await Promise.all(updatePromises)
+
+  // 3. Delete participant record
+  await deleteDoc(doc(db, 'events', EVENT_ID, 'participants', userId))
+
+  // 4. Delete global user record
+  await deleteDoc(doc(db, 'users', userId))
+}
+
 // --- PARTICIPANTS (MEMBROS FÍSICOS) ---
 // Na arquitetura aprovada, as pessoas físicas ficam num array `members` DENTRO do event_users (ParticipantRecord).
 // Portanto, a leitura e gravação dos participantes ocorre através do updateEventUser.
