@@ -137,9 +137,12 @@ export type MealType = 'Café da Manhã' | 'Almoço' | 'Jantar' | 'Petiscos' | '
 export type DailyMenu = {
   id: string
   day: string
+  date?: string
   meals: {
     type: MealType
     description: string
+    imageUrl?: string
+    isDefault?: boolean
   }[]
 }
 
