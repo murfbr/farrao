@@ -11,6 +11,7 @@ export type FamilyMember = {
   isDrinking: boolean
   isVegetarian: boolean
   restrictions: string
+  suggestions?: string
 }
 
 export type UserProfile = {
@@ -215,9 +216,9 @@ const defaultUser: UserProfile = {
   hasConfirmed: false,
   profileCompleted: false,
   members: [
-    { id: 'u1-1', name: 'João Silva', category: 'adult', isDrinking: true, isVegetarian: false, restrictions: '' },
-    { id: 'u1-2', name: 'Maria Silva', category: 'adult', isDrinking: true, isVegetarian: true, restrictions: 'Sem glutén' },
-    { id: 'u1-3', name: 'Pedrinho', category: 'child_under_10', isDrinking: false, isVegetarian: false, restrictions: '' },
+    { id: 'u1-1', name: 'João Silva', category: 'adult', isDrinking: true, isVegetarian: false, restrictions: '', suggestions: '' },
+    { id: 'u1-2', name: 'Maria Silva', category: 'adult', isDrinking: true, isVegetarian: true, restrictions: 'Sem glutén', suggestions: '' },
+    { id: 'u1-3', name: 'Pedrinho', category: 'child_under_10', isDrinking: false, isVegetarian: false, restrictions: '', suggestions: '' },
   ],
   daysAttending: 0,
   attendingDates: [],
@@ -410,6 +411,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   isDrinking: true,
                   isVegetarian: false,
                   restrictions: '',
+                  suggestions: '',
                 },
               ],
               daysAttending: 0,

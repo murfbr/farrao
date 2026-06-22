@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import MenuView from '@/components/food/MenuView'
 import MyPurchasesView from '@/components/food/MyPurchasesView'
 import MasterListView from '@/components/food/MasterListView'
+import RestrictionsView from '@/components/food/RestrictionsView'
 
 export default function Food() {
   const { user } = useAppStore()
@@ -25,8 +26,8 @@ export default function Food() {
           className={cn(
             'grid w-full mb-8 bg-white border border-amber-200 p-1 rounded-xl shadow-sm h-auto',
             user.isGovernance
-              ? 'grid-cols-2 md:grid-cols-3 max-w-[600px]'
-              : 'grid-cols-2 max-w-[400px]',
+              ? 'grid-cols-2 md:grid-cols-4 max-w-[800px]'
+              : 'grid-cols-2 md:grid-cols-3 max-w-[600px]',
           )}
         >
           <TabsTrigger
@@ -40,6 +41,12 @@ export default function Food() {
             className="rounded-lg py-2.5 font-bold data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
           >
             Minhas Compras
+          </TabsTrigger>
+          <TabsTrigger
+            value="restrictions"
+            className="rounded-lg py-2.5 font-bold data-[state=active]:bg-purple-500 data-[state=active]:text-white"
+          >
+            Restrições e Sugestões
           </TabsTrigger>
           {user.isGovernance && (
             <TabsTrigger
@@ -55,6 +62,9 @@ export default function Food() {
         </TabsContent>
         <TabsContent value="my-purchases" className="mt-0 outline-none">
           <MyPurchasesView />
+        </TabsContent>
+        <TabsContent value="restrictions" className="mt-0 outline-none">
+          <RestrictionsView />
         </TabsContent>
         {user.isGovernance && (
           <TabsContent value="shopping-list" className="mt-0 outline-none">

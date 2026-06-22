@@ -189,6 +189,7 @@ export default function Profile() {
           isDrinking: false,
           isVegetarian: false,
           restrictions: '',
+          suggestions: '',
         },
       ],
     }))
@@ -484,14 +485,25 @@ export default function Profile() {
                 </div>
               </div>
 
-              <div className="w-full space-y-2">
-                <Label className="font-bold text-foreground/70 text-xs uppercase tracking-widest ml-1">Restrições / Alergias Alimentares</Label>
-                <Input
-                  value={m.restrictions || ''}
-                  onChange={(e) => updateMember(m.id, 'restrictions', e.target.value)}
-                  className="bg-white border-amber-100 h-12 rounded-xl px-4 shadow-inner"
-                  placeholder="Ex: Alergia a camarão, sem glutén..."
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="w-full space-y-2">
+                  <Label className="font-bold text-foreground/70 text-xs uppercase tracking-widest ml-1">Restrições / Alergias Alimentares</Label>
+                  <Input
+                    value={m.restrictions || ''}
+                    onChange={(e) => updateMember(m.id, 'restrictions', e.target.value)}
+                    className="bg-white border-amber-100 h-12 rounded-xl px-4 shadow-inner"
+                    placeholder="Ex: Alergia a camarão, sem glutén..."
+                  />
+                </div>
+                <div className="w-full space-y-2">
+                  <Label className="font-bold text-foreground/70 text-xs uppercase tracking-widest ml-1">Sugestões de Cardápio</Label>
+                  <Input
+                    value={m.suggestions || ''}
+                    onChange={(e) => updateMember(m.id, 'suggestions', e.target.value)}
+                    className="bg-white border-amber-100 h-12 rounded-xl px-4 shadow-inner"
+                    placeholder="Ex: Pode ter pão de alho?..."
+                  />
+                </div>
               </div>
             </div>
           ))}

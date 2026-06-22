@@ -60,6 +60,7 @@ export default function RegisterProfile() {
           isDrinking: true,
           isVegetarian: false,
           restrictions: '',
+          suggestions: '',
         }
       ],
       attendingDates: user.attendingDates || [],
@@ -109,6 +110,7 @@ export default function RegisterProfile() {
           isDrinking: true,
           isVegetarian: false,
           restrictions: '',
+          suggestions: '',
         },
       ],
     }))
@@ -371,14 +373,25 @@ export default function RegisterProfile() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="font-bold text-foreground/70 ml-1">Restrições Alimentares / Alergias</Label>
-                  <Input
-                    value={m.restrictions}
-                    onChange={(e) => updateMember(m.id, 'restrictions', e.target.value)}
-                    placeholder="Ex: Alergia a amendoim, sem glúten..."
-                    className="border-amber-100 focus-visible:ring-primary rounded-xl h-12 px-4 shadow-sm"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="font-bold text-foreground/70 ml-1">Restrições Alimentares / Alergias</Label>
+                    <Input
+                      value={m.restrictions || ''}
+                      onChange={(e) => updateMember(m.id, 'restrictions', e.target.value)}
+                      placeholder="Ex: Alergia a amendoim, sem glúten..."
+                      className="border-amber-100 focus-visible:ring-primary rounded-xl h-12 px-4 shadow-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-bold text-foreground/70 ml-1">Sugestões de Cardápio</Label>
+                    <Input
+                      value={m.suggestions || ''}
+                      onChange={(e) => updateMember(m.id, 'suggestions', e.target.value)}
+                      placeholder="Ex: Pode ter pão de alho?..."
+                      className="border-amber-100 focus-visible:ring-primary rounded-xl h-12 px-4 shadow-sm"
+                    />
+                  </div>
                 </div>
               </div>
             ))}
