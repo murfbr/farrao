@@ -231,7 +231,7 @@ export default function Participants() {
                       <Badge
                         variant="outline"
                         className={cn(
-                          'uppercase text-[10px] font-black border tracking-wider',
+                          'uppercase text-[10px] font-black border tracking-wider whitespace-nowrap',
                           categoryColors[m.category],
                         )}
                       >

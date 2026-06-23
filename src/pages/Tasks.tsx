@@ -230,7 +230,7 @@ export default function Tasks() {
                       {group.memberIds.slice(0, 4).map((id, i) => (
                         <Avatar key={i} className="w-8 h-8 border-2 border-white">
                           <AvatarImage
-                            src={undefined}
+                            src={participants.find(p => p.id === id)?.photoUrl}
                           />
                           <AvatarFallback className="bg-primary/20 text-xs">
                             {getInitials(participants.find(p => p.id === id)?.name || 'U')}
@@ -473,7 +473,7 @@ export default function Tasks() {
                 <div key={member.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-orange-50/50 transition-colors border border-transparent hover:border-amber-100">
                   <div className="flex items-center gap-3">
                     <Avatar className="w-10 h-10 border-2 border-white shadow-sm shrink-0">
-                      <AvatarImage src={undefined} />
+                      <AvatarImage src={member.photoUrl} />
                       <AvatarFallback className="bg-primary/10 text-primary font-bold">{getInitials(member.name)}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">

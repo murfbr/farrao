@@ -95,6 +95,7 @@ export type ParticipantRecord = {
   socialQuotaOverride: number | null
   dueDate?: string // per-family due date override for all payments
   groupIds?: string[]
+  photoUrl?: string
 }
 
 export type PricingTiers = {
@@ -439,6 +440,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             // Garante que o flag isSuperAdmin esteja no estado local mesmo se já tiver perfil
             profile.isSuperAdmin = true
           }
+          
+          if (profile.photoUrl) {
+            // Sincroniza a foto do perfil global para o record do participante (para aparecer nas tarefas)
+            db.updateEventUser(firebaseUser.uid, { photoUrl: profile.photoUrl }).catch(() => {})
+          }
+
           setIsAdmin(isGod)
           setUserState(profile)
         } catch (err: any) {

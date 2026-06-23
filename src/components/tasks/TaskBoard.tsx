@@ -179,7 +179,7 @@ function TaskCard({
             <div className="flex items-center justify-between mt-1 pt-3 border-t border-amber-50">
               <div className="flex items-center gap-2">
                 <Avatar className="w-7 h-7 border-2 border-white shadow-sm">
-                  <AvatarImage src={undefined} />
+                  <AvatarImage src={participants.find(p => p.id === task.assigneeId)?.photoUrl} />
                   <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
                     {task.assignee ? getInitials(task.assignee) : '?'}
                   </AvatarFallback>
@@ -203,7 +203,7 @@ export default function TaskBoard({
   groupId: string
   onTaskClick: (taskId: string) => void
 }) {
-  const { tasks, updateTask, user } = useAppStore()
+  const { tasks, updateTask, user, participants } = useAppStore()
   
   // Filters state
   const [searchQuery, setSearchQuery] = useState('')
@@ -440,7 +440,7 @@ export default function TaskBoard({
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <Avatar className="w-6 h-6 border-2 border-white shadow-sm">
-                            <AvatarImage src={undefined} />
+                            <AvatarImage src={participants.find(p => p.id === task.assigneeId)?.photoUrl} />
                             <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-bold">
                               {task.assignee ? getInitials(task.assignee) : '?'}
                             </AvatarFallback>

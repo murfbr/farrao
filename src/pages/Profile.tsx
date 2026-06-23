@@ -102,6 +102,7 @@ export default function Profile() {
       }
       await updateParticipant(cleanData.id, removeUndefined({
         name: cleanData.name,
+        photoUrl: cleanData.photoUrl,
         members: cleanData.members,
         daysAttending: cleanData.daysAttending,
         attendingDates: cleanData.attendingDates,
@@ -411,7 +412,7 @@ export default function Profile() {
                 )}
               </div>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6">
+              <div className="flex flex-col sm:flex-row items-start gap-6">
                 <div className="w-full flex-1 space-y-2">
                   <Label className="font-bold text-foreground/70 ml-1">Nome Completo</Label>
                   <Input

@@ -162,6 +162,7 @@ export default function RegisterProfile() {
       await setUser(updatedProfile)
       await updateParticipant(user.id, removeUndefined({
         name: formData.name,
+        photoUrl: user.photoUrl,
         members: formData.members,
         daysAttending: formData.daysAttending,
         attendingDates: formData.attendingDates,
