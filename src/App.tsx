@@ -57,7 +57,7 @@ const MainApp = () => {
         <Route path="/participants" element={<Participants />} />
         <Route path="/food" element={<Food />} />
         <Route path="/tasks" element={<Tasks />} />
-        <Route path="/voting" element={<Voting />} />
+        {user.isGovernance && <Route path="/voting" element={<Voting />} />}
         <Route path="/finance" element={<Finance />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/:participantId" element={<Profile />} />

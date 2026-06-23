@@ -485,7 +485,7 @@ export default function Profile() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-6">
                 <div className="w-full space-y-2">
                   <Label className="font-bold text-foreground/70 text-xs uppercase tracking-widest ml-1">Restrições / Alergias Alimentares</Label>
                   <Input

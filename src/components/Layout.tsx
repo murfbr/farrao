@@ -51,7 +51,7 @@ export default function Layout() {
         </div>
         <nav className="flex-1 flex flex-col px-4 space-y-2 mt-4 pb-6">
           <div className="flex-1 space-y-2">
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEMS.filter(item => item.path !== '/voting' || user.isGovernance).map((item) => {
               const isActive = location.pathname === item.path
               return (
                 <Link
@@ -157,7 +157,7 @@ export default function Layout() {
 
         {/* Mobile Bottom Nav */}
         <nav className="md:hidden flex-none h-16 bg-white/95 backdrop-blur-xl border-t border-amber-200/50 flex justify-around items-center px-4 pb-safe shadow-[0_-5px_15px_-3px_rgba(255,102,0,0.05)]">
-          {NAV_ITEMS.filter(item => item.path !== '/profile').map((item) => {
+          {NAV_ITEMS.filter(item => item.path !== '/profile' && (item.path !== '/voting' || user.isGovernance)).map((item) => {
             const isActive = location.pathname === item.path
             return (
               <Link

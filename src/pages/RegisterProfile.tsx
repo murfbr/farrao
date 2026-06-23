@@ -373,7 +373,7 @@ export default function RegisterProfile() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col gap-6">
                   <div className="space-y-2">
                     <Label className="font-bold text-foreground/70 ml-1">Restrições Alimentares / Alergias</Label>
                     <Input
