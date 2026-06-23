@@ -22,3 +22,15 @@ export function getInitials(name: string) {
   if (parts.length === 1) return parts[0].substring(0, 1).toUpperCase()
   return (parts[0].substring(0, 1) + parts[parts.length - 1].substring(0, 1)).toUpperCase()
 }
+
+/**
+ * Removes undefined values recursively from an object by leveraging JSON serialization.
+ * This is particularly useful for cleaning objects before sending to Firestore,
+ * which does not accept undefined values.
+ * @param obj - Object to clean
+ * @returns Cleaned object without any undefined fields
+ */
+export function removeUndefined<T>(obj: T): T {
+  if (obj === undefined) return obj
+  return JSON.parse(JSON.stringify(obj))
+}

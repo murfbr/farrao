@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import useAppStore, { MemberCategory, FamilyMember } from '@/stores/useAppStore'
-import { cn } from '@/lib/utils'
+import { cn, removeUndefined } from '@/lib/utils'
 
 export default function RegisterProfile() {
   const { user, setUser, updateParticipant, eventDetails } = useAppStore()
@@ -149,7 +149,7 @@ export default function RegisterProfile() {
     }
 
     try {
-      const updatedProfile = {
+      const updatedProfile = removeUndefined({
         ...user,
         name: formData.name,
         members: formData.members,
@@ -157,16 +157,16 @@ export default function RegisterProfile() {
         attendingDates: formData.attendingDates,
         profileCompleted: true,
         eventIds: ['farrao-2026'],
-      }
+      })
 
       await setUser(updatedProfile)
-      await updateParticipant(user.id, {
+      await updateParticipant(user.id, removeUndefined({
         name: formData.name,
         members: formData.members,
         daysAttending: formData.daysAttending,
         attendingDates: formData.attendingDates,
         groupIds: [],
-      })
+      }))
 
       toast({
         title: 'Perfil Completado! 🎉',

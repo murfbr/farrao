@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getInitials, cn } from '@/lib/utils'
+import { getInitials, cn, removeUndefined } from '@/lib/utils'
 import useAppStore, { MemberCategory, ParticipantRecord } from '@/stores/useAppStore'
 
 export default function Profile() {
@@ -95,15 +95,17 @@ export default function Profile() {
   const handleSave = useCallback(async (dataToSave: typeof initialData) => {
     setSaveStatus('saving')
     try {
+      const cleanData = removeUndefined(dataToSave)
+
       if (!targetParticipant) {
-        await setUser(dataToSave)
+        await setUser(cleanData)
       }
-      await updateParticipant(dataToSave.id, {
-        name: dataToSave.name,
-        members: dataToSave.members,
-        daysAttending: dataToSave.daysAttending,
-        attendingDates: dataToSave.attendingDates,
-        hasConfirmed: dataToSave.hasConfirmed,
+      await updateParticipant(cleanData.id, {
+        name: cleanData.name,
+        members: cleanData.members,
+        daysAttending: cleanData.daysAttending,
+        attendingDates: cleanData.attendingDates,
+        hasConfirmed: cleanData.hasConfirmed,
       })
       
       setSaveStatus('saved')
@@ -448,24 +450,31 @@ export default function Profile() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {m.category === 'adult' && (
-                  <div className="flex items-center justify-between p-4 bg-orange-50/30 rounded-2xl border border-amber-100/50 transition-all hover:bg-orange-50/50">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-amber-100 rounded-xl shadow-sm">
-                        <Beer className="w-6 h-6 text-amber-600" />
-                      </div>
-                      <div>
-                        <p className="font-black text-sm text-foreground/80">Bebe Chopp?</p>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Custo faturado</p>
-                      </div>
+                <div className={cn(
+                  "flex items-center justify-between p-4 rounded-2xl border transition-all",
+                  m.category === 'adult' 
+                    ? "bg-orange-50/30 border-amber-100/50 hover:bg-orange-50/50" 
+                    : "bg-slate-50 border-slate-100 opacity-50 pointer-events-none grayscale"
+                )}>
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "p-3 rounded-xl shadow-sm",
+                      m.category === 'adult' ? "bg-amber-100" : "bg-slate-200"
+                    )}>
+                      <Beer className={cn("w-6 h-6", m.category === 'adult' ? "text-amber-600" : "text-slate-400")} />
                     </div>
-                    <Switch
-                      checked={!!m.isDrinking}
-                      onCheckedChange={(val) => updateMember(m.id, 'isDrinking', val)}
-                      className="data-[state=checked]:bg-amber-500 scale-110"
-                    />
+                    <div>
+                      <p className="font-black text-sm text-foreground/80">Bebe Chopp?</p>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Custo faturado</p>
+                    </div>
                   </div>
-                )}
+                  <Switch
+                    checked={!!m.isDrinking}
+                    onCheckedChange={(val) => updateMember(m.id, 'isDrinking', val)}
+                    disabled={m.category !== 'adult'}
+                    className="data-[state=checked]:bg-amber-500 scale-110"
+                  />
+                </div>
 
                 <div className="flex items-center justify-between p-4 bg-emerald-50/30 rounded-2xl border border-emerald-100/50 transition-all hover:bg-emerald-50/50">
                   <div className="flex items-center gap-4">
