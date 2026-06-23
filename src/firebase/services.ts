@@ -12,7 +12,7 @@ import {
   addDoc,
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, User, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
+import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
 import { db, auth, storage } from './config'
 import type { 
   UserProfile, 
@@ -59,6 +59,10 @@ export const loginWithGoogle = async () => {
 
 export const logout = async () => {
   await signOut(auth)
+}
+
+export const sendResetEmail = async (email: string) => {
+  return await sendPasswordResetEmail(auth, email)
 }
 
 // --- ALLOWLIST (CONVITES) ---

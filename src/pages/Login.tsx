@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { loginWithEmail } from '@/firebase/services'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { loginWithEmail, sendResetEmail } from '@/firebase/services'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Login() {
@@ -11,7 +12,9 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-
+  const [resetModalOpen, setResetModalOpen] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetLoading, setResetLoading] = useState(false)
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -35,6 +38,32 @@ export default function Login() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!resetEmail) return
+    setResetLoading(true)
+    try {
+      await sendResetEmail(resetEmail.toLowerCase())
+      toast({
+        title: 'Email Enviado',
+        description: 'Se houver uma conta com este email, você receberá um link de redefinição em instantes. Verifique também sua caixa de Spam.',
+      })
+      setResetModalOpen(false)
+      setResetEmail('')
+    } catch (err: any) {
+      console.error("Firebase reset error:", err)
+      // Mesma mensagem por segurança, ou pode ser genérico se quisermos esconder que a conta não existe.
+      toast({
+        title: 'Email Enviado',
+        description: 'Se houver uma conta com este email, você receberá um link de redefinição em instantes. Verifique também sua caixa de Spam.',
+      })
+      setResetModalOpen(false)
+      setResetEmail('')
+    } finally {
+      setResetLoading(false)
     }
   }
 
@@ -75,6 +104,15 @@ export default function Login() {
               className="bg-white"
             />
           </div>
+          <div className="flex justify-end">
+            <button 
+              type="button" 
+              onClick={() => setResetModalOpen(true)}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Esqueci minha senha
+            </button>
+          </div>
           <Button type="submit" disabled={loading} className="w-full font-bold text-base h-12 rounded-xl">
             {loading ? 'Entrando...' : 'Entrar'}
           </Button>
@@ -90,6 +128,38 @@ export default function Login() {
         </div>
       </div>
       </div>
+
+      <Dialog open={resetModalOpen} onOpenChange={setResetModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Recuperar Senha</DialogTitle>
+            <DialogDescription>
+              Digite o email associado à sua conta. Enviaremos um link seguro para você redefinir sua senha.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleResetPassword} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email">Email</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                placeholder="seu@email.com"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setResetModalOpen(false)} disabled={resetLoading}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={resetLoading || !resetEmail}>
+                {resetLoading ? 'Enviando...' : 'Enviar Link'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
