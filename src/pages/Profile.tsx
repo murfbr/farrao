@@ -289,7 +289,7 @@ export default function Profile() {
             </p>
           </div>
           <Switch
-            checked={formData.hasConfirmed}
+            checked={!!formData.hasConfirmed}
             onCheckedChange={(val) => handleChange('hasConfirmed', val)}
             className="data-[state=checked]:bg-emerald-500 scale-125 mr-2"
           />
@@ -460,7 +460,7 @@ export default function Profile() {
                       </div>
                     </div>
                     <Switch
-                      checked={m.isDrinking}
+                      checked={!!m.isDrinking}
                       onCheckedChange={(val) => updateMember(m.id, 'isDrinking', val)}
                       className="data-[state=checked]:bg-amber-500 scale-110"
                     />
@@ -478,7 +478,7 @@ export default function Profile() {
                     </div>
                   </div>
                   <Switch
-                    checked={m.isVegetarian}
+                    checked={!!m.isVegetarian}
                     onCheckedChange={(val) => updateMember(m.id, 'isVegetarian', val)}
                     className="data-[state=checked]:bg-emerald-500 scale-110"
                   />

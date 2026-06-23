@@ -355,7 +355,7 @@ export default function RegisterProfile() {
                       </div>
                     </div>
                     <Switch
-                      checked={m.isDrinking}
+                      checked={!!m.isDrinking}
                       onCheckedChange={(val) => updateMember(m.id, 'isDrinking', val)}
                       disabled={m.category !== 'adult'}
                       className="data-[state=checked]:bg-amber-500 scale-110"
@@ -373,7 +373,7 @@ export default function RegisterProfile() {
                       </div>
                     </div>
                     <Switch
-                      checked={m.isVegetarian}
+                      checked={!!m.isVegetarian}
                       onCheckedChange={(val) => updateMember(m.id, 'isVegetarian', val)}
                       className="data-[state=checked]:bg-emerald-500 scale-110"
                     />
