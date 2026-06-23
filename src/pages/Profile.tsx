@@ -100,13 +100,13 @@ export default function Profile() {
       if (!targetParticipant) {
         await setUser(cleanData)
       }
-      await updateParticipant(cleanData.id, {
+      await updateParticipant(cleanData.id, removeUndefined({
         name: cleanData.name,
         members: cleanData.members,
         daysAttending: cleanData.daysAttending,
         attendingDates: cleanData.attendingDates,
         hasConfirmed: cleanData.hasConfirmed,
-      })
+      }))
       
       setSaveStatus('saved')
       // Reset to idle after 3 seconds of showing 'saved'
