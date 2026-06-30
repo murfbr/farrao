@@ -435,7 +435,9 @@ export default function Profile() {
                   <Label className="font-bold text-foreground/70 ml-1">Categoria</Label>
                   <Select
                     value={m.category}
-                    onValueChange={(val: MemberCategory) => updateMember(m.id, 'category', val)}
+                    onValueChange={(val: MemberCategory) => {
+                      setTimeout(() => updateMember(m.id, 'category', val), 0)
+                    }}
                   >
                     <SelectTrigger className="bg-white border-amber-100 h-12 rounded-xl font-bold px-4 focus:ring-primary shadow-sm">
                       <SelectValue />

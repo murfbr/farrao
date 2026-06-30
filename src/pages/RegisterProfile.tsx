@@ -321,7 +321,9 @@ export default function RegisterProfile() {
                     <Label className="font-bold text-foreground/70 ml-1">Categoria *</Label>
                     <Select
                       value={m.category}
-                      onValueChange={(val: MemberCategory) => updateMember(m.id, 'category', val)}
+                      onValueChange={(val: MemberCategory) => {
+                        setTimeout(() => updateMember(m.id, 'category', val), 0)
+                      }}
                     >
                       <SelectTrigger className="border-amber-100 h-12 rounded-xl bg-white font-bold px-4">
                         <SelectValue />
